@@ -1,76 +1,123 @@
 package se.kth.cda.compiler.dataflow
 
-import se.kth.cda.arc.syntaxtree.{AST, Type}
-import se.kth.cda.compiler.dataflow.OperatorTemplate.Mapper
+import se.kth.cda.arc.syntaxtree.AST.Expr
+import se.kth.cda.arc.syntaxtree.Type
+import se.kth.cda.compiler.dataflow.ChannelKind.Local
+import se.kth.cda.compiler.dataflow.DFG.newId
+import se.kth.cda.compiler.dataflow.SinkKind.Debug
+import se.kth.cda.compiler.dataflow.SourceKind.Socket
+import se.kth.cda.compiler.dataflow.Strategy._
 
 object DFG {
-
-  import java.util.UUID
-
-  def newNodeId: String = s"node-${UUID.randomUUID()}"
-
-  def newSourceId: String = s"source-${UUID.randomUUID()}"
-
-  def newSinkId: String = s"sink-${UUID.randomUUID()}"
-
-  def newEdgeId: String = s"edge-${UUID.randomUUID()}"
+  var idCounter = 0
+  def newId: Int = {
+    val id = idCounter
+    idCounter += 1
+    id
+  }
 }
 
-trait DFG
+//trait Context extends Id {
+//  val trace: Option[Trace] = None
+//  val scope: Option[Scope] = None
+//}
 
-trait DFGEdge
-
-trait DFGNode
+class Node {
+  val id = s"node$newId"
+}
 
 trait Trace
 
-case class Metadata(id: String, trace: Option[Trace] = None, scope: Option[Scope] = None)
+// Sources have N outputs
+// Sinks have 1 input
+//         StreamTask---Sink
+//        /
+//  Source--StreamTask--Sink
+//        \
+//         StreamTask---Sink
+// Every node except for sources store ...
+//   An edge to its predecessor
+//   An input type
+//   An index (channel to send over from the parent node)
+// Every node except for sinks store ...
+//   An output strategy (e.g. broadcast on all edges)
+// StreamTasks store Weld template
 
-case class Graph(sources: List[Source]) extends DFG
+// Until we finalize the syntax, the DFG is a linear pipeline
+final case class DFG(id: String = s"dfg$newId", nodes: List[Node], target: String = "x86-64-unknown-linux-gnu")
 
-case class Scope(id: String, depth: Int, parent: Option[Scope])
+//case class Scope(depth: Int, parent: Option[Scope]) extends Id
 
-case class Operator(template: OperatorTemplate,
-                    inputs: List[DFGEdge] = Nil,
-                    var outputs: List[DFGEdge] = Nil,
-                    metadata: Metadata = Metadata(DFG.newNodeId))
-  extends DFGNode
+final case class Source(kind: SourceKind = Socket("localhost", 1337),
+                        inputType: Type,
+                        outputType: Type,
+                        parallelism: Int = 1,
+                        channelStrategy: Strategy = Forward)
+    extends Node
+final case class Sink(kind: SinkKind = Debug,
+                      inputType: Type,
+                      var predecessor: Channel = null,
+                      parallelism: Int = 1,
+                      channelStrategy: Strategy = Forward)
+    extends Node
 
-case class Source(var outputs: List[DFGEdge] = Nil, info: Metadata = Metadata(DFG.newSourceId)) extends DFGNode
+final case class StreamTask(kind: StreamTaskKind,
+                            weldFunc: Expr,
+                            inputType: Type,
+                            outputType: Type,
+                            predecessor: Channel,
+                            parallelism: Int = 1,
+                            channelStrategy: Strategy = Forward)
+    extends Node
 
-case class Sink(inputs: List[DFGEdge] = Nil, info: Metadata = Metadata(DFG.newSinkId)) extends DFGNode
+final case class Channel(kind: ChannelKind = Local, from: Node, index: Int = 0)
 
-case class Edge(info: Metadata, kind: EdgeKind, dataType: DataType, from: DFGNode, var to: DFGNode) extends DFGEdge
+sealed trait ChannelKind
 
-object Edge {
-
-  def forward(dataType: DataType, from: DFGNode = null, to: DFGNode = null): Edge =
-    Edge(Metadata(DFG.newEdgeId), EdgeKind.Forward, dataType, from, to)
+object ChannelKind {
+  final case object Local extends ChannelKind
+  final case object Remote extends ChannelKind
 }
 
-sealed trait OperatorTemplate
+sealed trait SourceKind
 
-object OperatorTemplate {
-
-  case class Mapper(weldBody: AST.Expr) extends OperatorTemplate
-
-  case class Filterer(weldBody: AST.Expr) extends OperatorTemplate
-
-  case class Flatmapper(weldBody: AST.Expr) extends OperatorTemplate
-
+object SourceKind {
+  final case class Socket(host: String, port: Int) extends SourceKind
 }
 
-case class DataType(dataType: Type, key: Option[Key] = None)
+sealed trait SinkKind
 
-case class Key(keyType: Type) // + some kind of access
+object SinkKind {
+  final case object Debug extends SinkKind
+}
 
-sealed trait EdgeKind
+sealed trait StreamTaskKind
 
-object EdgeKind {
+object StreamTaskKind {
+  final case object Map extends StreamTaskKind
+  final case object Filter extends StreamTaskKind
+  final case object FlatMap extends StreamTaskKind
+  final case object Join extends StreamTaskKind
+  final case object Split extends StreamTaskKind
+}
 
-  case object Shuffle extends EdgeKind
-  case object Forward extends EdgeKind
-  case object Feedback extends EdgeKind // back edge
-  case object Broadcast extends EdgeKind
+//case class DataType(value: Type, key: Option[Key] = None)
 
+//case class Key(keyType: Type) // + some kind of access
+
+sealed trait Strategy
+
+object Strategy {
+  final case object Shuffle extends Strategy
+  final case object Forward extends Strategy
+  final case object Feedback extends Strategy // back edge
+  final case object Broadcast extends Strategy
+}
+
+sealed trait NodeType
+
+object NodeType {
+  final case class Source(host: String, port: Int) extends NodeType
+  final case class Sink(host: String) extends NodeType
+  final case object StreamTask extends NodeType
 }

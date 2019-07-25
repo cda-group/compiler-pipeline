@@ -1,5 +1,6 @@
 package se.kth.cda.compiler
 
+import io.circe.syntax._
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream}
 import org.scalatest.{FunSuite, Matchers}
 import se.kth.cda.arc.syntaxtree.parser.Translator
@@ -7,21 +8,26 @@ import se.kth.cda.arc.syntaxtree.transformer.MacroExpansion
 import se.kth.cda.arc.syntaxtree.typer.TypeInference
 import se.kth.cda.arc.syntaxtree.{AST, PrettyPrint}
 import se.kth.cda.arc.{ArcLexer, ArcParser}
+import se.kth.cda.compiler.dataflow.JsonEncoder._
+
 import scala.language.implicitConversions
 
 class ParserTests extends FunSuite with Matchers {
 
   test("printy") {
-    val testS = """
-    |in: stream[i32], out: streamappender[i32]|
-      for(in, out, |b, _, i| merge(b, let x = 5; i+x))
-"""
-    val typed = compile(testS)
+    import se.kth.cda.compiler.dataflow.transform.ToDFG.ToDFG
+    val code =
+      """
+      #|in: stream[i32], out: streamappender[i32]|
+      # let mapper = result(for(in, streamappender[i32], |b, _, e| merge(b, e + 5));
+      # for(mapper, out, |b,_,e| merge(b, e - 5))
+      """.stripMargin('#')
+    val typed = compile(code)
     println(PrettyPrint.pretty(typed))
-    val statements = AST.ArcStatements(List(typed))
-    pprint.pprintln(statements)
-    val dfg = dataflow.Converter.transform(statements)
-    pprint.pprintln(dfg)
+    val dfg = typed.toDFG
+    pprint.pprintln(dfg, height = 200)
+    //pprint.pprintln(dfg, height = 200)
+    println(dfg.asJson)
   }
 
   private def compile(input: String): AST.Expr = {
