@@ -13,9 +13,13 @@ libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.+"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.+" % "test"
 libraryDependencies += "com.lihaoyi" %% "pprint" % "0.5.5"
 libraryDependencies += "com.chuusai" %% "shapeless" % "2.3.3"
-libraryDependencies += "io.circe" %% "circe-core" %% "0.11.1"
-libraryDependencies += "io.circe" %% "circe-generic" %% "0.11.1"
-libraryDependencies += "io.circe" %% "circe-parser" %% "0.11.1"
+libraryDependencies += "io.circe" %% "circe-core" % "0.11.1"
+libraryDependencies += "io.circe" %% "circe-generic" % "0.11.1"
+//libraryDependencies += "io.circe" %% "circe-parser" % "0.11.1"
+
+//addCompilerPlugin(
+//  "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
+//)
 
 wartremoverErrors ++= Seq(
   Wart.ArrayEquals,
