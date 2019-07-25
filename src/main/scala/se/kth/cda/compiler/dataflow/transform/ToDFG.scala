@@ -6,7 +6,8 @@ import se.kth.cda.arc.syntaxtree.AST.{Expr, Iter, Parameter, Symbol}
 import se.kth.cda.arc.syntaxtree.Type.Builder.StreamAppender
 import se.kth.cda.arc.syntaxtree.Type.Stream
 import se.kth.cda.compiler.dataflow.Analyzer.selectivity
-import se.kth.cda.compiler.dataflow.StreamTaskKind.FlatMap
+import se.kth.cda.compiler.dataflow.NodeKind._
+import se.kth.cda.compiler.dataflow.TaskKind.FlatMap
 import se.kth.cda.compiler.dataflow._
 
 object ToDFG {
@@ -22,8 +23,8 @@ object ToDFG {
       val (nodes, body) = expr.kind match {
         case lambda: Lambda =>
           (lambda.params.map {
-            case Parameter(symbol, StreamAppender(elemTy, _)) => symbol.name -> Sink(inputType = elemTy)
-            case Parameter(symbol, Stream(elemTy))            => symbol.name -> Source(inputType = elemTy, outputType = elemTy)
+            case Parameter(symbol, StreamAppender(elemTy, _)) => symbol.name -> Node(kind = Sink(sinkType = elemTy))
+            case Parameter(symbol, Stream(elemTy))            => symbol.name -> Node(kind = Source(sourceType = elemTy))
             case _                                            => ???
           }.toMap, lambda.body)
         case _ => ???
@@ -38,11 +39,11 @@ object ToDFG {
     // TODO: which ends with a for-expression
     expr.kind match {
       // let source = result(for(source, sink, ...)); (Add a new streamTask)
-      case Let(Symbol(streamTaskName, _, _), _, Expr(Result(Expr(arcFor: For, _, _, _)), _, _, _), body) =>
-        transformRec(body, nodes + (streamTaskName -> newStreamTask(arcFor, nodes)))
+      case Let(Symbol(taskName, _, _), _, Expr(Result(Expr(arcFor: For, _, _, _)), _, _, _), body) =>
+        transformRec(body, nodes + (taskName -> newStreamTask(arcFor, nodes)))
       // for(source, external_sink, ...) (Add a new streamTask and link it to an external sink)
       case arcFor @ For(_, Expr(Ident(Symbol(sinkName, _, _)), _, _, _), _) =>
-        nodes(sinkName) match {
+        nodes(sinkName).kind match {
           case sink: Sink =>
             sink.predecessor = Channel(from = newStreamTask(arcFor, nodes))
             nodes.values.toList // TODO: Allow multiple sinks
@@ -52,7 +53,7 @@ object ToDFG {
     }
   }
 
-  def newStreamTask(arcFor: For, nodes: Map[String, Node]): StreamTask = {
+  def newStreamTask(arcFor: For, nodes: Map[String, Node]): Node = {
     arcFor match {
       // TODO: Only one output stream for now
       case For(iter, Expr(_, StreamAppender(outputType, _), _, _), Expr(udf: Lambda, _, _, _)) =>
@@ -78,11 +79,12 @@ object ToDFG {
               case Projection(Expr(Ident(Symbol(sourceName, _, _)), _, _, _), i) => (nodes(sourceName), i)
               case _                                                             => ???
             }
-            StreamTask(kind = kind,
-                       weldFunc = weldFunc,
-                       inputType = inputType,
-                       outputType = outputType,
-                       predecessor = Channel(from = from, index = index))
+            Node(
+              kind = Task(kind = kind,
+                          weldFunc = weldFunc,
+                          inputType = inputType,
+                          outputType = outputType,
+                          predecessor = Channel(from = from, index = index)))
           // Keyed stream
           case Iter(KeyByIter, source, _, _, _, _, _, keyFunc) => ???
           case _                                               => ???

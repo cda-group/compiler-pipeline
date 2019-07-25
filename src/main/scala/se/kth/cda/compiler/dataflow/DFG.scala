@@ -22,10 +22,6 @@ object DFG {
 //  val scope: Option[Scope] = None
 //}
 
-class Node {
-  val id = s"node$newId"
-}
-
 trait Trace
 
 // Sources have N outputs
@@ -48,27 +44,28 @@ final case class DFG(id: String = s"dfg$newId", nodes: List[Node], target: Strin
 
 //case class Scope(depth: Int, parent: Option[Scope]) extends Id
 
-final case class Source(kind: SourceKind = Socket("localhost", 1337),
+final case class Node(id: String = s"node$newId", parallelism: Int = 1, kind: NodeKind)
+
+sealed trait NodeKind
+
+object NodeKind {
+  final case class Source(sourceType: Type,
+                          channelStrategy: Strategy = Forward,
+                          kind: SourceKind = Socket("localhost", 1337))
+      extends NodeKind
+  final case class Sink(sinkType: Type,
+                        var predecessor: Channel = null,
+                        channelStrategy: Strategy = Forward,
+                        kind: SinkKind = Debug)
+      extends NodeKind
+  final case class Task(weldFunc: Expr,
                         inputType: Type,
                         outputType: Type,
-                        parallelism: Int = 1,
-                        channelStrategy: Strategy = Forward)
-    extends Node
-final case class Sink(kind: SinkKind = Debug,
-                      inputType: Type,
-                      var predecessor: Channel = null,
-                      parallelism: Int = 1,
-                      channelStrategy: Strategy = Forward)
-    extends Node
-
-final case class StreamTask(kind: StreamTaskKind,
-                            weldFunc: Expr,
-                            inputType: Type,
-                            outputType: Type,
-                            predecessor: Channel,
-                            parallelism: Int = 1,
-                            channelStrategy: Strategy = Forward)
-    extends Node
+                        predecessor: Channel,
+                        channelStrategy: Strategy = Forward,
+                        kind: TaskKind)
+      extends NodeKind
+}
 
 final case class Channel(kind: ChannelKind = Local, from: Node, index: Int = 0)
 
@@ -91,14 +88,14 @@ object SinkKind {
   final case object Debug extends SinkKind
 }
 
-sealed trait StreamTaskKind
+sealed trait TaskKind
 
-object StreamTaskKind {
-  final case object Map extends StreamTaskKind
-  final case object Filter extends StreamTaskKind
-  final case object FlatMap extends StreamTaskKind
-  final case object Join extends StreamTaskKind
-  final case object Split extends StreamTaskKind
+object TaskKind {
+  final case object Map extends TaskKind
+  final case object Filter extends TaskKind
+  final case object FlatMap extends TaskKind
+  final case object Join extends TaskKind
+  final case object Split extends TaskKind
 }
 
 //case class DataType(value: Type, key: Option[Key] = None)
