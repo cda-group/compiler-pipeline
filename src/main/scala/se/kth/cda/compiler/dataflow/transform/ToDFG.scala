@@ -1,18 +1,21 @@
 package se.kth.cda.compiler.dataflow.transform
 
 import se.kth.cda.arc.syntaxtree.AST.ExprKind._
-import se.kth.cda.arc.syntaxtree.AST.IterKind.{KeyByIter, NextIter, UnknownIter}
-import se.kth.cda.arc.syntaxtree.AST.{Expr, Iter, Parameter, Symbol}
-import se.kth.cda.arc.syntaxtree.Type.Builder.StreamAppender
-import se.kth.cda.arc.syntaxtree.Type.Stream
-import se.kth.cda.compiler.dataflow.Analyzer.selectivity
+import se.kth.cda.arc.syntaxtree.AST.IterKind._
+import se.kth.cda.arc.syntaxtree.AST._
+import se.kth.cda.arc.syntaxtree.Type.Builder._
+import se.kth.cda.arc.syntaxtree.Type._
+import se.kth.cda.compiler.dataflow.Analyzer._
 import se.kth.cda.compiler.dataflow.NodeKind._
-import se.kth.cda.compiler.dataflow.TaskKind.FlatMap
+import se.kth.cda.compiler.dataflow.TaskKind._
 import se.kth.cda.compiler.dataflow._
 
 object ToDFG {
 
-  import se.kth.cda.compiler.dataflow.transform.ToFlatmap._
+  import se.kth.cda.compiler.dataflow.transform.ToFlatMap._
+  import se.kth.cda.compiler.dataflow.transform.ToMap._
+  import se.kth.cda.compiler.dataflow.transform.ToFilter._
+
   implicit class ToDFG(val expr: Expr) extends AnyVal {
 
     // Arc streamTasks are flatmaps from 1→N channels
@@ -45,8 +48,9 @@ object ToDFG {
       case arcFor @ For(_, Expr(Ident(Symbol(sinkName, _, _)), _, _, _), _) =>
         nodes(sinkName).kind match {
           case sink: Sink =>
-            sink.predecessor = Channel(from = newStreamTask(arcFor, nodes))
-            nodes.values.toList // TODO: Allow multiple sinks
+            val task = newStreamTask(arcFor, nodes)
+            sink.predecessor = Channel(from = task)
+            task +: nodes.values.toList // TODO: Allow multiple sinks
           case _ => ???
         }
       case _ => ???
@@ -57,12 +61,12 @@ object ToDFG {
     arcFor match {
       // TODO: Only one output stream for now
       case For(iter, Expr(_, StreamAppender(outputType, _), _, _), Expr(udf: Lambda, _, _, _)) =>
-        // Begin by converting the Arc UDF to Weld
-        val (weldFunc, kind) = selectivity(udf) match {
-          // TODO: Implement Map and Filter transformations
-          // case s if s == 1 => Template.Map(udf.intoWeldMap())
-          // case s if s <= 1 => Template.Filter(udf.intoWeldFilter())
-          case _ => (udf.toFlatmap, FlatMap)
+        // Convert the Arc UDF to a Weld UDF
+        // TODO: Support functions with more fan-in
+        val (weldFunc, kind) = (selectivity(udf), fan_out(udf)) match {
+          case (1, 1)          => (udf.toMap, Map)
+          //case (s, 1) if s < 1 => (udf.toFilter, Filter)
+          case _               => (udf.toFlatmap, FlatMap)
         }
         // Next, create the streamTask
         iter match {

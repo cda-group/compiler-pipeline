@@ -7,7 +7,7 @@ import se.kth.cda.arc.syntaxtree.Type._
 import se.kth.cda.compiler.Utils.fix
 import se.kth.cda.compiler.dataflow.transform.Utils._
 
-object ToFlatmap {
+object ToFlatMap {
   implicit class ToFlatmap(val udf: ExprKind.Lambda) extends AnyVal {
     // Flatmaps are the most general types of combinators, which may contain any number of merge(builder, value)
     // where the builder type is a StreamAppender[T] or structs of StreamAppender[T]s

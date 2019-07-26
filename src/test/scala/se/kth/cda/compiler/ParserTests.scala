@@ -19,7 +19,12 @@ class ParserTests extends FunSuite with Matchers {
     val code =
       """
       #|in: stream[i32], out: streamappender[i32]|
-      # let mapper = result(for(in, streamappender[i32], |b, _, e| merge(b, e + 5));
+      # let mapper = result(for(in, streamappender[i32], |b, _, e|
+      #   let b1 = b;
+      #   let b2 = merge(b1, e + 5);
+      #   let b3 = b2;
+      #   b3
+      # );
       # for(mapper, out, |b,_,e| merge(b, e - 5))
       """.stripMargin('#')
     val typed = compile(code)
