@@ -36,13 +36,14 @@ object JsonEncoder {
          )))
     case task: Task =>
       Json.obj(
-        ("Source",
+        ("StreamTask",
          Json.obj(
            ("weld_code", pretty(task.weldFunc).asJson),
            ("input_type", task.inputType.render.asJson),
            ("output_type", task.outputType.render.asJson),
            ("channel_strategy", task.channelStrategy.toString.asJson),
            ("predecessor", task.predecessor.asJson),
+           ("kind", task.kind.asJson),
          )))
     case sink: Sink =>
       Json.obj(
