@@ -9,6 +9,7 @@ import se.kth.cda.arc.syntaxtree.Type.Struct
 import se.kth.cda.compiler.Utils.fix
 
 object Analyzer {
+  // Calculates the ratio between input and output elements
   def selectivity(udf: Lambda): Float = {
     fix[Expr, Float] { f => expr =>
       if (expr.ty.isArcType && expr.ty.isBuilderType) {
@@ -29,12 +30,13 @@ object Analyzer {
     }(udf.body)
   }
 
+  // Calculates the number of output channels
   def fan_out(udf: Lambda): Int = {
     fix[Type, Int] { f =>
       {
         case _: StreamAppender => 1
         case _: Windower       => 1
-        case e: Struct         => e.elemTys.map(f).sum
+        case ty: Struct        => ty.elemTys.map(f).sum
         case _                 => 0
       }
     }(udf.body.ty)

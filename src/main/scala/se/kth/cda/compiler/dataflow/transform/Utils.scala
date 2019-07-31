@@ -28,21 +28,26 @@ object Utils {
         case _ => ???
       }
     }
+
+    def toFunc: Expr = {
+      Lambda(Vector.empty, self).toExpr(Function(Vector.empty, self.ty))
+    }
   }
 
   // Turns an Arc parameter into a Weld parameter
   //     |source: streamappender, elem: i32|
   //  => |source: appender, elem: i32|
   implicit class ParameterTransformer(val self: Parameter) extends AnyVal {
-    def toWeld: Parameter = Parameter(self.symbol, self.ty.toWeldType)
+    def toAppender: Parameter = Parameter(self.symbol, self.ty.toAppender)
+    def toAggregator: Parameter = Parameter(self.symbol, self.ty.toAggregator)
   }
 
   // Turns an Arc type into a Weld type
   //     streamappender
   //  => appender
   implicit class TypeTransformer(val self: Type) extends AnyVal {
-    // Transforms an Arc type into a Weld type
-    def toWeldType: Type = {
+    // Transforms an Arc appender into a Weld appender
+    def toAppender: Type = {
       fix[Type, Type] { f =>
         {
           case ty: StreamAppender => Appender(ty.elemTy, ty.annotations)
@@ -53,13 +58,37 @@ object Utils {
       }(self)
     }
 
+    // Transforms an Arc stream into its element type
+    def toElemType: Type = {
+      fix[Type, Type] { f =>
+      {
+        case ty: Stream => ty.elemTy
+        case ty: Struct => Struct(ty.elemTys.map(f))
+        case ty @ _     => ty
+      }
+      }(self)
+    }
+
     // Returns an instance of a Weld builder-type
-    def toWeldExpr: Expr = {
+    def toInstance: Expr = {
       fix[Type, Expr] { f =>
         {
           case ty: Struct   => MakeStruct(ty.elemTys.map(f)).toExpr(ty)
           case ty: Appender => NewBuilder(Appender(ty.elemTy, ty.annotations), Vector.empty).toExpr(ty)
+          case ty: Merger   => NewBuilder(Merger(ty.elemTy, ty.opTy, ty.annotations), Vector.empty).toExpr(ty)
           case _            => ???
+        }
+      }(self)
+    }
+
+    // Transforms an Arc Windower type into its aggregation type
+    def toAggregator: Type = {
+      fix[Type, Type] { f =>
+        {
+          case ty: Windower => ty.aggrTy
+          case ty: Function => Function(ty.params.map(f), f(ty.returnTy))
+          case ty: Struct   => Struct(ty.elemTys.map(f))
+          case ty @ _       => ty
         }
       }(self)
     }

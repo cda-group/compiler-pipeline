@@ -16,18 +16,21 @@ class ParserTests extends FunSuite with Matchers {
 
   test("printy") {
     import se.kth.cda.compiler.dataflow.transform.ToDFG.ToDFG
-    val code =
+    val typedCode =
       """
       #|in: stream[i32], out: streamappender[i32]|
-      # let mapper = result(for(in, streamappender[i32], |b, _, e|
-      #   let b1 = b;
-      #   let b2 = merge(b1, e + 5);
-      #   let b3 = b2;
-      #   b3
-      # );
-      # for(mapper, out, |b,_,e| merge(b, e - 5))
+      # let mapper = result(for(in, streamappender[i32], |b, _, e| merge(b, e + 5)));
+      # let tumbler = result(for(mapper,
+      #  windower[unit, merger[i32,+], i32, i32](
+      #   |ts, windows, state| { [ ts / 60L ] , () },
+      #   |wm, windows, state| { filter(windows, |ts| ts < wm) , () },
+      #   |agg| result(agg)
+      #  ),
+      #  |w, _, e| merge(w, e)
+      # ));
+      # for(tumbler, out, |b,_,e| merge(b, e - 5))
       """.stripMargin('#')
-    val typed = compile(code)
+    val typed = compile(typedCode)
     println(PrettyPrint.pretty(typed))
     val dfg = typed.toDFG
     pprint.pprintln(dfg, height = 200)

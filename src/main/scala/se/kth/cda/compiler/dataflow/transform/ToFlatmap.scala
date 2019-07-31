@@ -8,7 +8,7 @@ import se.kth.cda.compiler.Utils.fix
 import se.kth.cda.compiler.dataflow.transform.Utils._
 
 object ToFlatMap {
-  implicit class ToFlatmap(val udf: ExprKind.Lambda) extends AnyVal {
+  implicit class ToFlatmap(val udf: Lambda) extends AnyVal {
     // Flatmaps are the most general types of combinators, which may contain any number of merge(builder, value)
     // where the builder type is a StreamAppender[T] or structs of StreamAppender[T]s
     //
@@ -41,17 +41,17 @@ object ToFlatMap {
     //
     def toFlatmap: Expr = {
       val Lambda(Vector(arcBuilder, _, arcElement), arcBody) = udf
-      val weldBuilder = arcBuilder.toWeld
-      val weldElement = arcElement.toWeld
+      val weldBuilder = arcBuilder.toAppender
+      val weldElement = arcElement
       val weldBody = fix[Expr, Expr] { f => expr =>
         if (expr.ty.isArcType && expr.ty.isBuilderType) {
           expr.kind match {
-            case e: Merge  => Merge(f(e.builder), e.value).toExpr(expr.ty.toWeldType)
-            case e: If     => If(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty.toWeldType)
-            case e: Select => Select(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty.toWeldType)
-            case e: For    => For(e.iterator, e.builder, f(e.body)).toExpr(expr.ty.toWeldType)
-            case e: Lambda => Lambda(e.params.map(_.toWeld), f(e.body)).toExpr(expr.ty.toWeldType)
-            case e: Let    => Let(e.symbol, e.bindingTy.toWeldType, f(e.value), f(e.body)).toExpr(expr.ty.toWeldType)
+            case e: Merge  => Merge(f(e.builder), e.value).toExpr(expr.ty.toAppender)
+            case e: If     => If(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty.toAppender)
+            case e: Select => Select(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty.toAppender)
+            case e: For    => For(e.iterator, e.builder, f(e.body)).toExpr(expr.ty.toAppender)
+            case e: Lambda => Lambda(e.params.map(_.toAppender), f(e.body)).toExpr(expr.ty.toAppender)
+            case e: Let    => Let(e.symbol, e.bindingTy.toAppender, f(e.value), f(e.body)).toExpr(expr.ty.toAppender)
             case _         => expr
           }
         } else {
@@ -62,7 +62,7 @@ object ToFlatMap {
       val id = Ident(Symbol.unknown)
       val result = id.toExpr(weldBuilder.ty).toResult
       val letBody = Let(id.symbol, weldBuilder.ty, weldBody, result).toExpr(result.ty)
-      val letBuilder = Let(weldBuilder.symbol, weldBuilder.ty, weldBuilder.ty.toWeldExpr, letBody).toExpr(letBody.ty)
+      val letBuilder = Let(weldBuilder.symbol, weldBuilder.ty, weldBuilder.ty.toInstance, letBody).toExpr(letBody.ty)
       val weldExpr = Lambda(Vector(weldElement), letBuilder).toExpr(Function(Vector(weldElement.ty), result.ty))
       weldExpr
     }

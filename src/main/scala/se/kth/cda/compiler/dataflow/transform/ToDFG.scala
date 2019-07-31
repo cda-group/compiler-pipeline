@@ -6,6 +6,7 @@ import se.kth.cda.arc.syntaxtree.AST._
 import se.kth.cda.arc.syntaxtree.Type.Builder._
 import se.kth.cda.arc.syntaxtree.Type._
 import se.kth.cda.compiler.dataflow.Analyzer._
+import se.kth.cda.compiler.dataflow.ChannelKind.Local
 import se.kth.cda.compiler.dataflow.NodeKind._
 import se.kth.cda.compiler.dataflow.TaskKind._
 import se.kth.cda.compiler.dataflow._
@@ -14,7 +15,9 @@ object ToDFG {
 
   import se.kth.cda.compiler.dataflow.transform.ToFlatMap._
   import se.kth.cda.compiler.dataflow.transform.ToMap._
-  import se.kth.cda.compiler.dataflow.transform.ToFilter._
+  import se.kth.cda.compiler.dataflow.transform.ToWindow._
+  import se.kth.cda.compiler.dataflow.transform.Utils._
+  //import se.kth.cda.compiler.dataflow.transform.ToFilter._
 
   implicit class ToDFG(val expr: Expr) extends AnyVal {
 
@@ -41,7 +44,7 @@ object ToDFG {
     // TODO: For now expect the Arc code to be a nesting of Let-expressions
     // TODO: which ends with a for-expression
     expr.kind match {
-      // let source = result(for(source, sink, ...)); (Add a new streamTask)
+      // let task = result(for(source, sink, ...)); (Add a new streamTask)
       case Let(Symbol(taskName, _, _), _, Expr(Result(Expr(arcFor: For, _, _, _)), _, _, _), body) =>
         transformRec(body, nodes + (taskName -> newStreamTask(arcFor, nodes)))
       // for(source, external_sink, ...) (Add a new streamTask and link it to an external sink)
@@ -49,7 +52,7 @@ object ToDFG {
         nodes(sinkName).kind match {
           case sink: Sink =>
             val task = newStreamTask(arcFor, nodes)
-            sink.predecessor = Channel(from = task)
+            sink.predecessor = task
             task +: nodes.values.toList // TODO: Allow multiple sinks
           case _ => ???
         }
@@ -60,16 +63,9 @@ object ToDFG {
   def newStreamTask(arcFor: For, nodes: Map[String, Node]): Node = {
     arcFor match {
       // TODO: Only one output stream for now
-      case For(iter, Expr(_, StreamAppender(outputType, _), _, _), Expr(udf: Lambda, _, _, _)) =>
-        // Convert the Arc UDF to a Weld UDF
-        // TODO: Support functions with more fan-in
-        val (weldFunc, kind) = (selectivity(udf), fan_out(udf)) match {
-          case (1, 1)          => (udf.toMap, Map)
-          //case (s, 1) if s < 1 => (udf.toFilter, Filter)
-          case _               => (udf.toFlatmap, FlatMap)
-        }
-        // Next, create the streamTask
-        iter match {
+      case For(iter, sink, Expr(udf: Lambda, _, _, _)) =>
+        // Create the task
+        val (inputType, precedessor, _) = iter match {
           // Non-keyed stream
           case Iter(NextIter | UnknownIter, source, _, _, _, _, _, _) =>
             val inputType = source.ty match {
@@ -83,16 +79,53 @@ object ToDFG {
               case Projection(Expr(Ident(Symbol(sourceName, _, _)), _, _, _), i) => (nodes(sourceName), i)
               case _                                                             => ???
             }
-            Node(
-              kind = Task(kind = kind,
-                          weldFunc = weldFunc,
-                          inputType = inputType,
-                          outputType = outputType,
-                          predecessor = Channel(from = from, index = index)))
-          // Keyed stream
-          case Iter(KeyByIter, source, _, _, _, _, _, keyFunc) => ???
-          case _                                               => ???
+            (inputType, from, index)
+          //case Iter(KeyByIter, source, _, _, _, _, _, keyFunc) => ???
+          case _ => ???
         }
+        val nodeKind = sink match {
+          case Expr(_, StreamAppender(outputType, _), _, _) =>
+            // TODO: Support functions with more fan-in
+            val (weldFunc, kind) = (selectivity(udf), fan_out(udf)) match {
+              case (1, 1) => (udf.toMap, Map)
+              //case (s, 1) if s < 1 => (udf.toFilter, Filter)
+              case _ => (udf.toFlatmap, FlatMap)
+            }
+            Task(kind = kind,
+                 weldFunc = weldFunc,
+                 inputType = inputType,
+                 outputType = outputType,
+                 predecessor = precedessor,
+                 successors = Vector.empty)
+          case Expr(NewBuilder(Windower(_, aggrTy, _, aggrResultTy, _), Vector(a1, a2, a3)), _, _, _) =>
+            (a1.kind, a2.kind, a3.kind) match {
+              case (assigner: Lambda, _: Lambda, _: Lambda) =>
+                Window(
+                  assigner = assigner.toAssigner,
+                  predecessor = precedessor,
+                  successors = Vector.empty,
+                  function = WindowFunction(
+                    inputType = inputType,
+                    outputType = aggrResultTy,
+                    builderType = aggrTy,
+                    init = aggrTy.toInstance.toFunc,
+                    udf.toLift,
+                    lower = a3
+                  )
+                )
+              case _ => ???
+            }
+        }
+        // Add node as successor to predecessor
+        val newNode = Node(kind = nodeKind)
+        precedessor.kind match {
+          case source: Source => source.successors = source.successors :+ Local(newNode)
+          case task: Task     => task.successors = task.successors :+ Local(newNode)
+          case window: Window => window.successors = window.successors :+ Local(newNode)
+          case _              => ???
+        }
+        newNode
+      //val (weldFunc, kind) =
       case _ => ???
     }
   }

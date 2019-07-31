@@ -30,8 +30,8 @@ object ToMap {
     //
 
     def toMap: Expr = {
-      val Lambda(Vector(_, _, arcElement), arcBody) = udf
-      val weldElement = arcElement.toWeld
+      val Lambda(Vector(arcBuilder, _, arcElement), arcBody) = udf
+      val weldElement = arcElement.toAppender
       val weldBody = fix[(Expr, Map[String, Expr]), Expr] { f =>
         {
           case (e, c) =>
@@ -39,7 +39,7 @@ object ToMap {
               case StreamAppender(elemTy, _) =>
                 e.kind match {
                   case Merge(_, value)               => f((value, c))
-                  case Ident(sym)                    => if (sym.name == arcElement.symbol.name) { e } else { c(sym.name) }
+                  case Ident(sym)                    => if (sym.name == arcBuilder.symbol.name) { e } else { c(sym.name) }
                   case If(cond, onTrue, onFalse)     => If(cond, f((onTrue, c)), f((onFalse, c))).toExpr(elemTy)
                   case Select(cond, onTrue, onFalse) => Select(cond, f((onTrue, c)), f((onFalse, c))).toExpr(elemTy)
                   case Let(symbol, bindingTy, value, body) =>
