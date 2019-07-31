@@ -99,14 +99,14 @@ object ToDFG {
                  successors = Vector.empty)
           case Expr(NewBuilder(Windower(_, aggrTy, _, aggrResultTy, _), Vector(a1, a2, a3)), _, _, _) =>
             (a1.kind, a2.kind, a3.kind) match {
-              case (assigner: Lambda, _: Lambda, _: Lambda) =>
+              case (assigner: Lambda, _: Lambda, lower: Lambda) =>
                 Window(
                   assigner = assigner.toAssigner,
                   predecessor = precedessor,
                   successors = Vector.empty,
                   function = WindowFunction(
                     inputType = inputType,
-                    outputType = aggrResultTy,
+                    outputType = lower.body.ty,
                     builderType = aggrTy,
                     init = aggrTy.toInstance.toFunc,
                     udf.toLift,
