@@ -28,7 +28,8 @@ class ParserTests extends FunSuite with Matchers {
       #  ),
       #  |w, _, e| merge(w, e)
       # ));
-      # for(tumbler, out, |b,_,e| merge(b, e - 5))
+      # let filterer = result(for(tumbler, streamappender[i32], |b, _, e| if(e > 20, b, merge(b, e)));
+      # for(filterer, out, |b,_,e| merge(b, e - 5))
       """.stripMargin('#')
     val typed = compile(typedCode)
     println(PrettyPrint.pretty(typed))

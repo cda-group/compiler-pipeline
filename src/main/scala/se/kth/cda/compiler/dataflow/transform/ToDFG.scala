@@ -17,7 +17,7 @@ object ToDFG {
   import se.kth.cda.compiler.dataflow.transform.ToMap._
   import se.kth.cda.compiler.dataflow.transform.ToWindow._
   import se.kth.cda.compiler.dataflow.transform.Utils._
-  //import se.kth.cda.compiler.dataflow.transform.ToFilter._
+  import se.kth.cda.compiler.dataflow.transform.ToFilter._
 
   implicit class ToDFG(val expr: Expr) extends AnyVal {
 
@@ -35,18 +35,18 @@ object ToDFG {
           }.toMap, lambda.body)
         case _ => ???
       }
-      DFG(nodes = transformRec(body, nodes))
+      DFG(nodes = transform(body, nodes))
     }
 
   }
 
-  def transformRec(expr: Expr, nodes: Map[String, Node]): List[Node] = {
+  def transform(expr: Expr, nodes: Map[String, Node]): List[Node] = {
     // TODO: For now expect the Arc code to be a nesting of Let-expressions
     // TODO: which ends with a for-expression
     expr.kind match {
       // let task = result(for(source, sink, ...)); (Add a new streamTask)
       case Let(Symbol(taskName, _, _), _, Expr(Result(Expr(arcFor: For, _, _, _)), _, _, _), body) =>
-        transformRec(body, nodes + (taskName -> newStreamTask(arcFor, nodes)))
+        transform(body, nodes + (taskName -> newStreamTask(arcFor, nodes)))
       // for(source, external_sink, ...) (Add a new streamTask and link it to an external sink)
       case arcFor @ For(_, Expr(Ident(Symbol(sinkName, _, _)), _, _, _), _) =>
         nodes(sinkName).kind match {
@@ -85,10 +85,10 @@ object ToDFG {
         }
         val nodeKind = sink match {
           case Expr(_, StreamAppender(outputType, _), _, _) =>
-            // TODO: Support functions with more fan-in
+            // TODO: Support functions with more fan-out
             val (weldFunc, kind) = (selectivity(udf), fan_out(udf)) match {
               case (1, 1) => (udf.toMap, Map)
-              //case (s, 1) if s < 1 => (udf.toFilter, Filter)
+              case (s, 1) if s < 1 => (udf.toFilter, Filter)
               case _ => (udf.toFlatmap, FlatMap)
             }
             Task(kind = kind,
