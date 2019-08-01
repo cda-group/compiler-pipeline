@@ -145,11 +145,3 @@ object ChannelStrategy {
   final case object Feedback extends ChannelStrategy
   final case object Broadcast extends ChannelStrategy
 }
-
-sealed trait NodeType
-
-object NodeType {
-  final case class Source(host: String, port: Long) extends NodeType
-  final case class Sink(host: String) extends NodeType
-  final case object StreamTask extends NodeType
-}
