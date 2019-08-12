@@ -21,8 +21,8 @@ object ToFlatMap {
     //
     // for(source, sink, |b:{StreamAppender[i32], StreamAppender[i32]}, e:i32|
     //     let b1: StreamAppender[i32] = merge(b.$0, e);
-    //     let b2: StreamAppender[i32] = merge(b.$0, e);
-    //     b2
+    //     let b2: StreamAppender[i32] = merge(b.$1, e);
+    //     {b1, b2}
     //  )
     //
     // Should generate:
@@ -30,9 +30,9 @@ object ToFlatMap {
     // |e:i32|
     //     let b: {Appender[i32], Appender[i32]} = {Appender[i32], Appender[i32]};
     //     let final = (
-    //         let b1: StreamAppender[i32] = merge(b.$0, e);
-    //         let b: StreamAppender[i32] = merge(b.$0, e);
-    //         b2
+    //         let b1: Appender[i32] = merge(b.$0, e);
+    //         let b2: Appender[i32] = merge(b.$1, e);
+    //         {b1, b2}
     //     );
     //     {result(final.$0), result(final.$1)}
     //
@@ -46,13 +46,14 @@ object ToFlatMap {
       val weldBody = fix[Expr, Expr] { f => expr =>
         if (expr.ty.isArcType && expr.ty.isBuilderType) {
           expr.kind match {
-            case e: Merge  => Merge(f(e.builder), e.value).toExpr(expr.ty.toAppender)
-            case e: If     => If(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty.toAppender)
-            case e: Select => Select(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty.toAppender)
-            case e: For    => For(e.iterator, e.builder, f(e.body)).toExpr(expr.ty.toAppender)
-            case e: Lambda => Lambda(e.params.map(_.toAppender), f(e.body)).toExpr(expr.ty.toAppender)
-            case e: Let    => Let(e.symbol, e.bindingTy.toAppender, f(e.value), f(e.body)).toExpr(expr.ty.toAppender)
-            case _         => expr
+            case e: Merge       => Merge(f(e.builder), e.value).toExpr(expr.ty.toAppender)
+            case e: If          => If(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty.toAppender)
+            case e: Select      => Select(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty.toAppender)
+            case e: For         => For(e.iterator, e.builder, f(e.body)).toExpr(expr.ty.toAppender)
+            case e: Lambda      => Lambda(e.params.map(_.toAppender), f(e.body)).toExpr(expr.ty.toAppender)
+            case e: Application => Application(f(expr), e.args.map(arg => f(arg))).toExpr(expr.ty.toAppender)
+            case e: Let         => Let(e.symbol, e.bindingTy.toAppender, f(e.value), f(e.body)).toExpr(expr.ty.toAppender)
+            case _              => expr
           }
         } else {
           expr

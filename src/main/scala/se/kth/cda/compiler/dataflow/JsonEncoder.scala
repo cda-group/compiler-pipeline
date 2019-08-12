@@ -56,19 +56,23 @@ object JsonEncoder {
          )))
     case sink: Sink =>
       Json.obj(
-        ("sink_type", sink.sinkType.render.asJson),
-        ("predecessor", sink.predecessor.id.asJson),
-      )
+        ("Sink",
+         Json.obj(
+           ("sink_type", sink.sinkType.render.asJson),
+           ("predecessor", sink.predecessor.id.asJson),
+         )))
     case window: Window =>
       Json.obj(
-        ("channel_strategy", window.channelStrategy.asJson),
-        ("predecessor", window.predecessor.id.asJson),
-        ("successors", window.successors.asJson),
-        ("assigner", window.assigner.asJson),
-        ("window_function", window.function.asJson),
-        ("time_kind", window.time.asJson),
-        ("window_kind", window.kind.asJson),
-      )
+        ("Window",
+         Json.obj(
+           ("channel_strategy", window.channelStrategy.asJson),
+           ("predecessor", window.predecessor.id.asJson),
+           ("successors", window.successors.asJson),
+           ("assigner", window.assigner.asJson),
+           ("window_function", window.function.asJson),
+           ("time_kind", window.time.asJson),
+           ("window_kind", window.kind.asJson),
+         )))
   }
 
   implicit val encodeSourceKind: Encoder[SourceKind] = {
@@ -89,6 +93,7 @@ object JsonEncoder {
     case FlatMap => "FlatMap".asJson
     case Join    => "Join".asJson
     case Split   => "Split".asJson
+    case Unknown => "Unknown".asJson
   }
 
   implicit val encodeSinkKind: Encoder[SinkKind] = {
@@ -149,7 +154,7 @@ object JsonEncoder {
     case _: VecMerger   => "VecMerger".asJson
     case _: DictMerger  => "DictMerger".asJson
     case _: GroupMerger => "GroupMerger".asJson
-    case _ => ???
+    case _              => ???
   }
 
 }

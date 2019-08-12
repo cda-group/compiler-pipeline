@@ -42,6 +42,8 @@ object ToMap {
                   case Ident(sym)                    => if (sym.name == arcBuilder.symbol.name) { e } else { c(sym.name) }
                   case If(cond, onTrue, onFalse)     => If(cond, f((onTrue, c)), f((onFalse, c))).toExpr(elemTy)
                   case Select(cond, onTrue, onFalse) => Select(cond, f((onTrue, c)), f((onFalse, c))).toExpr(elemTy)
+                  case Application(Expr(func: Lambda, _, _, _), args) =>
+                    Application(func.toMap, args.map(a => f((a, c)))).toExpr(elemTy)
                   case Let(symbol, bindingTy, value, body) =>
                     bindingTy match {
                       case StreamAppender(_, _) => f((body, c + (symbol.name -> f((value, c)))))

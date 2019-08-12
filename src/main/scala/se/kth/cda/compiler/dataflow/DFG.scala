@@ -40,11 +40,11 @@ object DFG {
 
 trait Trace
 
-final case class DFG(id: String = s"dfg$newId", nodes: List[Node], target: String = "x86-64-unknown-linux-gnu")
+final case class DFG(id: String = s"dfg$newId", var nodes: List[Node], target: String = "x86-64-unknown-linux-gnu")
 
 //case class Scope(depth: Long, parent: Option[Scope]) extends Id
 
-final case class Node(id: String = s"node$newId", parallelism: Long = 1, kind: NodeKind)
+final case class Node(var id: String = s"node$newId", parallelism: Long = 1, kind: NodeKind)
 
 sealed trait NodeKind
 
@@ -55,16 +55,17 @@ object NodeKind {
                           kind: SourceKind = Socket("localhost", 1337))
       extends NodeKind
   final case class Sink(sinkType: Type, var predecessor: Node = null, kind: SinkKind = Debug) extends NodeKind
-  final case class Task(weldFunc: Expr,
+  final case class Task(var weldFunc: Expr,
                         inputType: Type,
                         outputType: Type,
-                        predecessor: Node,
+                        var predecessor: Node,
                         var successors: Vector[ChannelKind] = Vector.empty,
                         channelStrategy: ChannelStrategy = Forward,
-                        kind: TaskKind)
+                        var kind: TaskKind,
+                        var removed: Boolean = false)
       extends NodeKind
   final case class Window(channelStrategy: ChannelStrategy = Forward,
-                          predecessor: Node,
+                          var predecessor: Node,
                           var successors: Vector[ChannelKind] = Vector.empty,
                           assigner: WindowAssigner,
                           function: WindowFunction,
@@ -102,6 +103,7 @@ object TaskKind {
   final case object FlatMap extends TaskKind
   final case object Join extends TaskKind
   final case object Split extends TaskKind
+  final case object Unknown extends TaskKind
 }
 
 sealed trait WindowKind

@@ -9,6 +9,7 @@ import se.kth.cda.arc.syntaxtree.typer.TypeInference
 import se.kth.cda.arc.syntaxtree.{AST, PrettyPrint}
 import se.kth.cda.arc.{ArcLexer, ArcParser}
 import se.kth.cda.compiler.dataflow.JsonEncoder._
+import se.kth.cda.compiler.dataflow.optimize.OptimizeDFG._
 
 import scala.language.implicitConversions
 
@@ -17,6 +18,12 @@ class ParserTests extends FunSuite with Matchers {
   test("printy") {
     import se.kth.cda.compiler.dataflow.transform.ToDFG.ToDFG
     val typedCode =
+      """
+      #|in: stream[i32], out: streamappender[i32]|
+      # let mapper = result(for(in, streamappender[i32], |b, _, e| merge(b, e + 5)));
+      # for(mapper, out, |b,_,e| merge(b, e - 5))
+      """.stripMargin('#')
+    val _ =
       """
       #|in: stream[i32], out: streamappender[i32]|
       # let mapper = result(for(in, streamappender[i32], |b, _, e| merge(b, e + 5)));
@@ -32,9 +39,10 @@ class ParserTests extends FunSuite with Matchers {
       # for(filterer, out, |b,_,e| merge(b, e - 5))
       """.stripMargin('#')
     val typed = compile(typedCode)
-    println(PrettyPrint.pretty(typed))
+    //println(PrettyPrint.pretty(typed))
     val dfg = typed.toDFG
-    pprint.pprintln(dfg, height = 200)
+    dfg.optimize()
+    //pprint.pprintln(dfg, height = 200)
     //pprint.pprintln(dfg, height = 200)
     println(dfg.asJson)
   }
@@ -46,8 +54,8 @@ class ParserTests extends FunSuite with Matchers {
     val parser = new ArcParser(tokenStream)
     val translator = Translator(parser)
     val ast = translator.expr()
-    val expanded = MacroExpansion.expand(ast).get
-    val typed = TypeInference.solve(expanded).get
+    //val expanded = MacroExpansion.expand(ast).get
+    val typed = TypeInference.solve(ast).get
     typed
   }
 }
