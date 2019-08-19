@@ -8,7 +8,6 @@ import se.kth.cda.arc.syntaxtree.Type.Builder._
 import se.kth.cda.arc.syntaxtree.Type._
 import se.kth.cda.compiler.dataflow.ChannelKind.Local
 import se.kth.cda.compiler.dataflow.NodeKind._
-import se.kth.cda.compiler.dataflow.TaskKind._
 import se.kth.cda.compiler.dataflow._
 
 object ToDFG {
@@ -45,10 +44,14 @@ object ToDFG {
         transform(body, nodes + (taskName -> transformFor(arcFor, nodes)))
       // for(source, external_sink, ...) (Add a new node and link it to an external sink)
       case arcFor @ For(_, Expr(Ident(Symbol(sinkName, _, _)), _, _, _), _) =>
-        nodes(sinkName).kind match {
+        val node = nodes(sinkName)
+        node.kind match {
           case sink: Sink =>
             val operator = transformFor(arcFor, nodes)
             sink.predecessor = operator
+            sink.predecessor.kind match {
+              case task: Task => task.successors = task.successors :+ Local(node = node)
+            }
             operator +: nodes.values.toList // TODO: Allow multiple sinks
           case _ => ???
         }
@@ -56,7 +59,7 @@ object ToDFG {
     }
   }
 
-  def transformFor(arcFor: For, nodes: Map[String, Node]): Node = {
+  def transformFor(arcFor: For, nodes: Map[String, Node]): Node =
     arcFor match {
       // TODO: Only one output stream for now
       case For(iter, sink, func) =>
@@ -65,18 +68,17 @@ object ToDFG {
         // Add node as successor to predecessor
         val newNode = Node(kind = nodeKind)
         precedessor.kind match {
-          case source: Source => source.successors = source.successors :+ Local(newNode)
-          case task: Task     => task.successors = task.successors :+ Local(newNode)
-          case window: Window => window.successors = window.successors :+ Local(newNode)
+          case source: Source => source.successors = source.successors :+ Local(node = newNode)
+          case task: Task     => task.successors = task.successors :+ Local(node = newNode)
+          case window: Window => window.successors = window.successors :+ Local(node = newNode)
           case _              => ???
         }
         newNode
       //val (weldFunc, kind) =
       case _ => ???
     }
-  }
 
-  private def transformSource(iter: Iter, nodes: Map[String, Node]): (Type, Node, Int) = {
+  private def transformSource(iter: Iter, nodes: Map[String, Node]): (Type, Node, Int) =
     iter match {
       // Non-keyed stream
       case Iter(NextIter | UnknownIter, source, _, _, _, _, _, _) =>
@@ -86,23 +88,21 @@ object ToDFG {
           case Ident(Symbol(sourceName, _, _)) => (nodes(sourceName), 0)
           // for(source.$0, sink, ...)
           case Projection(Expr(Ident(Symbol(sourceName, _, _)), _, _, _), i) => (nodes(sourceName), i)
-          case _ => ???
+          case _                                                             => ???
         }
         (inputType, from, index)
       //case Iter(KeyByIter, source, _, _, _, _, _, keyFunc) =>
       case _ => ???
     }
-  }
 
-  private def transformSink(sink: Expr, func: Expr, inputType: Type, precedessor: Node): NodeKind = {
+  private def transformSink(sink: Expr, func: Expr, inputType: Type, precedessor: Node): NodeKind =
     sink match {
       case Expr(_, StreamAppender(outputType, _), _, _) =>
-        Task(kind = Unknown,
-          weldFunc = func,
-          inputType = inputType,
-          outputType = outputType,
-          predecessor = precedessor,
-          successors = Vector.empty)
+        Task(weldFunc = func,
+             inputType = inputType,
+             outputType = outputType,
+             predecessor = precedessor,
+             successors = Vector.empty)
       case Expr(NewBuilder(Windower(_, aggrTy, _, aggrResultTy, _), Vector(a1, a2, a3)), _, _, _) =>
         (a1.kind, a2.kind, a3.kind, func.kind) match {
           case (assigner: Lambda, _: Lambda, lower: Lambda, lift: Lambda) =>
@@ -122,6 +122,5 @@ object ToDFG {
           case _ => ???
         }
     }
-  }
 
 }
