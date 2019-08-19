@@ -38,13 +38,31 @@ object DFG {
   }
 }
 
+object Node {
+  var idCounter = 0
+  def newId: Int = {
+    val id = idCounter
+    idCounter += 1
+    id
+  }
+}
+
+object Channel {
+  var idCounter = 0
+  def newId: Int = {
+    val id = idCounter
+    idCounter += 1
+    id
+  }
+}
+
 trait Trace
 
-final case class DFG(id: String = s"dfg$newId", var nodes: List[Node], target: String = "x86-64-unknown-linux-gnu")
+final case class DFG(id: String = s"dfg${DFG.newId}", var nodes: List[Node], target: String = "x86-64-unknown-linux-gnu")
 
 //case class Scope(depth: Long, parent: Option[Scope]) extends Id
 
-final case class Node(var id: String = s"node$newId", parallelism: Long = 1, kind: NodeKind)
+final case class Node(var id: String = s"node${Node.newId}", parallelism: Long = 1, kind: NodeKind)
 
 sealed trait NodeKind
 
@@ -61,7 +79,7 @@ object NodeKind {
                         var predecessor: Node,
                         var successors: Vector[ChannelKind] = Vector.empty,
                         channelStrategy: ChannelStrategy = Forward,
-                        var kind: TaskKind,
+                        var kind: TaskKind = TaskKind.Unknown,
                         var removed: Boolean = false)
       extends NodeKind
   final case class Window(channelStrategy: ChannelStrategy = Forward,
