@@ -9,8 +9,8 @@ object OptimizeDFG {
   import se.kth.cda.compiler.dataflow.optimize.Specialization._
   import se.kth.cda.compiler.dataflow.JsonEncoder.encodeDFG
   implicit class OptimizeDFG(val dfg: DFG) extends AnyVal {
-    def optimize(): Unit = {
-      println(encodeDFG(dfg))
+    def optimize: DFG = {
+      //println(encodeDFG(dfg))
       dfg.nodes
         .filter(_.kind match {
           case _: Sink => true
@@ -24,7 +24,7 @@ object OptimizeDFG {
           case _          => true
         })
 
-      println(encodeDFG(dfg))
+      //println(encodeDFG(dfg))
 
       dfg.nodes
         .filter(_.kind match {
@@ -32,6 +32,8 @@ object OptimizeDFG {
           case _       => false
         })
         .foreach(_.specialize())
+
+      dfg
     }
   }
 }

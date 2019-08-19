@@ -7,6 +7,8 @@ import se.kth.cda.arc.syntaxtree.transformer.MacroExpansion
 import se.kth.cda.arc.syntaxtree.typer.TypeInference
 import se.kth.cda.arc.{ArcLexer, ArcParser}
 import se.kth.cda.compiler.dataflow.transform.ToDFG._
+import se.kth.cda.compiler.dataflow.JsonEncoder.encodeDFG
+import se.kth.cda.compiler.dataflow.optimize.OptimizeDFG._
 
 object Compiler {
   def compile(code: String): String = {
@@ -20,11 +22,11 @@ object Compiler {
     val expanded = MacroExpansion.expand(ast).get
     val typed = TypeInference.solve(expanded).get
     val dfg = typed.toDFG
+    val optimized = dfg.optimize()
 
     println(PrettyPrint.pretty(typed))
-    pprint.pprintln(dfg)
-    ""
+    pprint.pprintln(optimized)
 
-    //dfg.asJson.noSpaces
+    encodeDFG(optimized).noSpaces
   }
 }
