@@ -1,21 +1,27 @@
 name := "Arcon Compiler Pipeline"
 
-organization := "se.kth.cda"
+lazy val pipelineSettings = Seq(
+  organization := "se.kth.cda",
+  scalaVersion := "2.12.8",
+  version := "0.1.0-SNAPSHOT",
+  scalacOptions ++= Seq("-deprecation", "-feature")
+)
 
-version := "0.1.0-SNAPSHOT"
+lazy val arc = RootProject(uri("git://github.com/cda-group/arc.git"))
+version in arc := "0.1.0-SNAPSHOT"
 
-scalaVersion := "2.12.8"
+lazy val compilerPipeline= (project in file("."))
+  .settings(pipelineSettings: _*)
+  .settings(libraryDependencies ++= Seq(
+       "org.scalactic" %% "scalactic" % "3.0.+",
+       "org.scalatest" %% "scalatest" % "3.0.+" % "test",
+       "com.lihaoyi" %% "pprint" % "0.5.5",
+       "com.chuusai" %% "shapeless" % "2.3.3",
+       "io.circe" %% "circe-core" % "0.11.1",
+       "io.circe" %% "circe-generic" % "0.11.1"
+    )
+  ).dependsOn(arc)
 
-scalacOptions ++= Seq("-deprecation", "-feature")
-
-libraryDependencies += "se.kth.cda" %% "arc" % "0.1.0-SNAPSHOT"
-libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.+"
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.+" % "test"
-libraryDependencies += "com.lihaoyi" %% "pprint" % "0.5.5"
-libraryDependencies += "com.chuusai" %% "shapeless" % "2.3.3"
-libraryDependencies += "io.circe" %% "circe-core" % "0.11.1"
-libraryDependencies += "io.circe" %% "circe-generic" % "0.11.1"
-//libraryDependencies += "io.circe" %% "circe-parser" % "0.11.1"
 
 //addCompilerPlugin(
 //  "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
