@@ -51,7 +51,7 @@ object ToFlatMap {
             case e: Select      => Select(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty.toAppender)
             case e: For         => For(e.iterator, e.builder, f(e.body)).toExpr(expr.ty.toAppender)
             case e: Lambda      => Lambda(e.params.map(_.toAppender), f(e.body)).toExpr(expr.ty.toAppender)
-            case e: Application => Application(f(expr), e.args.map(arg => f(arg))).toExpr(expr.ty.toAppender)
+            case e: Application => Application(f(e.expr), e.args.map(arg => f(arg))).toExpr(expr.ty.toAppender)
             case e: Let         => Let(e.symbol, e.bindingTy.toAppender, f(e.value), f(e.body)).toExpr(expr.ty.toAppender)
             case _              => expr
           }
