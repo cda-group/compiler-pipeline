@@ -22,10 +22,10 @@ object Compiler {
     val expanded = MacroExpansion.expand(ast).get
     val typed = TypeInference.solve(expanded).get
     val dfg = typed.toDFG
-    val optimized = dfg.optimize()
+    val optimized = dfg.optimize
 
-    println(PrettyPrint.pretty(typed))
-    pprint.pprintln(optimized)
+    //println(PrettyPrint.pretty(typed))
+    //pprint.pprintln(optimized)
 
     encodeDFG(optimized).noSpaces
   }
