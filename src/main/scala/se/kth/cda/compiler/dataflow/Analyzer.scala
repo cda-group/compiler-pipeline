@@ -16,7 +16,6 @@ object Analyzer {
     // Calculates the ratio between input and output elements
     def selectivity: Float = {
       fix[Expr, Float] { f => expr =>
-        println(s"${expr.ty.render}")
         if (expr.ty.isArcType && expr.ty.isBuilderType) {
           expr.kind match {
             case e: Merge       => 1 + f(e.builder)
