@@ -44,9 +44,8 @@ object DecodeMetadata {
   implicit val socketSourceDecoder: Decoder[SourceKind.Socket] =
     (cursor: HCursor) =>
       for {
-        host <- cursor.get[String]("host")
-        port <- cursor.get[Long]("port")
-      } yield SourceKind.Socket(host, port)
+        addr <- cursor.get[String]("addr")
+      } yield SourceKind.Socket(addr)
 
   implicit val sinkDecoder: Decoder[NodeKind.Sink] =
     (cursor: HCursor) =>
@@ -66,9 +65,8 @@ object DecodeMetadata {
   implicit val socketSinkDecoder: Decoder[SinkKind.Socket] =
     (cursor: HCursor) =>
       for {
-        host <- cursor.get[String]("host")
-        port <- cursor.get[Long]("port")
-      } yield SinkKind.Socket(host, port)
+        addr <- cursor.get[String]("addr")
+      } yield SinkKind.Socket(addr)
 
   implicit val formatDecoder: Decoder[Format] = deriveDecoder
 

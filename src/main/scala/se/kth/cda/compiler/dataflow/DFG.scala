@@ -91,7 +91,7 @@ object ChannelKind {
 sealed trait SourceKind
 
 object SourceKind {
-  final case class Socket(var host: String, var port: Long) extends SourceKind
+  final case class Socket(var addr: String) extends SourceKind
   final case class LocalFile(var path: String) extends SourceKind
 }
 
@@ -99,7 +99,7 @@ sealed trait SinkKind
 
 object SinkKind {
   final case object Debug extends SinkKind
-  final case class Socket(var host: String, var port: Long) extends SinkKind
+  final case class Socket(var addr: String) extends SinkKind
   final case class LocalFile(var path: String) extends SinkKind
 }
 
@@ -125,7 +125,7 @@ object TaskKind {
 sealed trait WindowKind
 
 object WindowKind {
-  final case class Keyed(kind: KeyKind) extends WindowKind
+  final case object Keyed extends WindowKind
   final case object All extends WindowKind
 }
 
@@ -142,13 +142,6 @@ object TimeKind {
   final case class Event(slack: Long) extends TimeKind
   final case object Processing extends TimeKind
   final case object Ingestion extends TimeKind
-}
-
-sealed trait KeyKind
-
-object KeyKind {
-  final case class Struct(id: String) extends KeyKind
-  final case object Primitive extends KeyKind
 }
 
 //case class DataType(value: Type, key: Option[Key] = None)
