@@ -1,27 +1,11 @@
 package se.kth.cda.compiler
 
-import org.antlr.v4.runtime.{CharStreams, CommonTokenStream}
 import org.scalatest.{FunSuite, Matchers}
-import se.kth.cda.arc.syntaxtree.AST
-import se.kth.cda.arc.syntaxtree.parser.Translator
-import se.kth.cda.arc.syntaxtree.typer.TypeInference
-import se.kth.cda.arc.{ArcLexer, ArcParser}
+import se.kth.cda.compiler.dataflow.IdGenerator
 
 import scala.language.implicitConversions
 
 class ParserTests extends FunSuite with Matchers {
-
-  private def compile(input: String): AST.Expr = {
-    val inputStream = CharStreams.fromString(input)
-    val lexer = new ArcLexer(inputStream)
-    val tokenStream = new CommonTokenStream(lexer)
-    val parser = new ArcParser(tokenStream)
-    val translator = Translator(parser)
-    val ast = translator.expr()
-    //val expanded = MacroExpansion.expand(ast).get
-    val typed = TypeInference.solve(ast).get
-    typed
-  }
 
   test("normalize") {
     val input =
@@ -60,8 +44,53 @@ class ParserTests extends FunSuite with Matchers {
       |}
       """.stripMargin
 
-    println(input)
+    //println(input)
     val output = Compiler.compile(input)
-    println(output)
+    //println(output)
   }
+
+  test("touchpad") {
+    val input =
+      """
+        |{
+        |  "nodes": [
+        |    {
+        |      "id": "source_0",
+        |      "kind": {
+        |        "Source": {
+        |          "format": "CSV",
+        |          "kind": {
+        |            "Socket": {
+        |              "host": "127.0.0.1",
+        |              "port": 8000
+        |            }
+        |          }
+        |        }
+        |      }
+        |    },
+        |    {
+        |      "id": "sink_0",
+        |      "kind": {
+        |        "Sink": {
+        |          "format": "CSV",
+        |          "kind": {
+        |            "Socket": {
+        |              "host": "127.0.0.1",
+        |              "port": 9000
+        |            }
+        |          }
+        |        }
+        |      }
+        |    }
+        |  ],
+        |  "timestamp_extractor": 0,
+        |  "arc_code": "|source_0: stream[{i64,f64,f64,f64}], sink_0: streamappender[?]|\n# preprocess\nlet operator_1 = result(for(source_0, streamappender[?], |sb,si,se| if(\nlet obj101 = (se);\nlet obj102 = (obj101.$2);\nlet obj103 = (obj102 < f64(0.0));\nlet obj104 = (obj101.$2);\nlet obj105 = (obj104 > f64(1.0));\nlet obj106 = (obj103 && obj105);\nobj106\n, merge(sb, se), sb)));\n# extract timestamp\nlet operator_2 = result(for(operator_1, streamappender[?], |sb,si,se| merge(sb,\nlet obj107 = (se);\nlet obj108 = ({ obj107.$1,obj107.$2,obj107.$3 });\nobj108\n)));\n# extract key\nlet operator_3 = result(for(operator_2, streamappender[?], |sb,si,se| merge(sb,\nlet obj110 = (se);\nlet obj111 = (obj110.$0);\nlet obj112 = (obj111 / f64(25));\nlet obj113 = (obj110.$1);\nlet obj114 = (obj113 / f64(25));\nlet obj115 = (obj110.$2);\nlet obj116 = ({ obj112,obj114 });\nlet obj117 = ({ obj116,obj115 });\nobj117\n)));\n# create tumbling window\nlet operator_4 = result(for(operator_3, windower[unit,appender[?],?,vec[?]](\n  |ts,windows,state| { [ts/60L], () },\n  \t|wm,windows,state| { result(for(windows, appender, |b,i,e| if(i < wm, merge(b, i), b))), () },\n  \t|agg| result(agg)\n), |sb,si,se| merge(sb, se)));\n# sum up pressures\nfor(operator_4, sink_0, |sb,si,se|\nlet groups = tovec(result(for(se, groupmerger, |b,i,e| merge(b,e))));\nlet keyvals = result(for(groups, appender, |gb,gi,ge| merge(gb,{ge.$0,\nlet obj120 = (ge.$1);\nlet obj123 = (result(\n    for(obj120, \n        appender[f64], \n        |b: appender[f64], i: i64, e: f64| \n            merge(b, e + 0.1)\n    )\n));\nlet obj124 = (result(\n    for(\n        obj123,\n        merger[f64, +],\n        |b: merger[f64, +], i: i64, e: f64| \n            merge(b, e)\n    )\n));\nobj124\n})));\nmerge(sb, keyvals)\n)\n"
+        |}
+      """.stripMargin
+
+    //println(input)
+    val output = Compiler.compile(input)
+    //println(output)
+  }
+
 }
