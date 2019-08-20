@@ -5,7 +5,6 @@ import io.circe.{Encoder, Json}
 import se.kth.cda.arc.syntaxtree.PrettyPrint.pretty
 import se.kth.cda.compiler.dataflow.ChannelKind.{Local, Remote}
 import se.kth.cda.compiler.dataflow.ChannelStrategy.{Broadcast, Feedback, Forward, Shuffle}
-import se.kth.cda.compiler.dataflow.KeyKind.{Primitive, Struct}
 import se.kth.cda.compiler.dataflow.NodeKind.{Sink, Source, Task, Window}
 import se.kth.cda.compiler.dataflow.TaskKind._
 import se.kth.cda.compiler.dataflow.TimeKind.{Event, Ingestion, Processing}
@@ -44,7 +43,7 @@ object EncodeDFG {
          )))
     case task: Task =>
       Json.obj(
-        ("StreamTask",
+        ("Task",
          Json.obj(
            ("weld_code", pretty(task.weldFunc).asJson),
            ("input_type", task.inputType.asJson),
@@ -81,8 +80,7 @@ object EncodeDFG {
       Json.obj(
         ("Socket",
          Json.obj(
-           ("host", socket.host.asJson),
-           ("port", socket.port.asJson),
+           ("addr", socket.addr.asJson),
          ),
         ),
       )
@@ -111,8 +109,7 @@ object EncodeDFG {
       Json.obj(
         ("Socket",
          Json.obj(
-           ("host", socket.host.asJson),
-           ("port", socket.port.asJson),
+           ("addr", socket.addr.asJson),
          ),
         ))
     case localfile: SinkKind.LocalFile =>
@@ -170,13 +167,8 @@ object EncodeDFG {
   }
 
   implicit val encodeWindowKind: Encoder[WindowKind] = {
-    case keyed: Keyed => Json.obj(("Keyed", Json.obj(("kind", keyed.kind.asJson))))
+    case Keyed        => "Keyed".asJson
     case All          => "All".asJson
-  }
-
-  implicit val encodeKeyKind: Encoder[KeyKind] = {
-    case struct: Struct => Json.obj(("Struct", Json.obj(("index", struct.id.asJson))))
-    case Primitive      => "Primitive".asJson
   }
 
   //implicit val encodeType: Encoder[Type] = {
