@@ -13,6 +13,7 @@ import se.kth.cda.compiler.dataflow.decode.DecodeMetadata.metadataDecoder
 import se.kth.cda.compiler.dataflow.{IdGenerator, Metadata}
 import se.kth.cda.compiler.dataflow.optimize.OptimizeDFG._
 import se.kth.cda.compiler.dataflow.enrich.EnrichDFG._
+import se.kth.cda.compiler.dataflow.deploy.Deploy._
 import se.kth.cda.compiler.dataflow.pretty.PrettyPrint._
 
 object Compiler {
@@ -22,6 +23,7 @@ object Compiler {
       case Left(value) => throw value
       case Right(value) => value
     }
+    //print(metadata)
 
     IdGenerator.reset()
 
@@ -36,13 +38,15 @@ object Compiler {
     val dfg = typed.toDFG
     //println(dfg.pretty)
 
-    //val optimized_dfg = dfg.optimize
     val enriched_dfg = dfg.enrich(metadata)
-    println(enriched_dfg.pretty)
+    val optimized_dfg = enriched_dfg.optimize
+    //println(optimized_dfg.pretty)
+    //println(enriched_dfg.pretty)
 
     //println(PrettyPrint.pretty(typed))
     //pprint.pprintln(optimized)
 
-    encodeDFG(enriched_dfg).noSpaces
+    val ordered_dfg = optimized_dfg.order
+    encodeDFG(ordered_dfg).noSpaces
   }
 }

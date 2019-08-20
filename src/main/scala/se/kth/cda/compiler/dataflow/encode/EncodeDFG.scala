@@ -67,6 +67,7 @@ object EncodeDFG {
            ("sink_type", sink.sinkType.asJson(encodeType(StructId.from(sink.predecessor.id, id)))),
            ("format", sink.format.asJson),
            ("predecessor", sink.predecessor.id.asJson),
+           ("kind", sink.kind.asJson),
          )))
     case window: Window =>
       Json.obj(

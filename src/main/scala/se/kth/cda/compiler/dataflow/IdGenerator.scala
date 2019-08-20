@@ -20,6 +20,15 @@ object IdGenerator {
     }
   }
 
+  object NodeId {
+    var idCounter = 0
+    def newOrdering: Int = {
+      val id = idCounter
+      idCounter += 1
+      id
+    }
+  }
+
   object ChannelId {
     var idCounter = 0
     def newId: String = {

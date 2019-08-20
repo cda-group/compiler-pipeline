@@ -46,7 +46,7 @@ class ParserTests extends FunSuite with Matchers {
 
     //println(input)
     val output = Compiler.compile(input)
-    //println(output)
+    println(output)
   }
 
   test("touchpad") {

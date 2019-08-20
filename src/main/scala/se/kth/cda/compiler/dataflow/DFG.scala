@@ -3,7 +3,7 @@ package se.kth.cda.compiler.dataflow
 import se.kth.cda.arc.syntaxtree.AST.Expr
 import se.kth.cda.arc.syntaxtree.Type
 import se.kth.cda.compiler.dataflow.ChannelStrategy._
-import se.kth.cda.compiler.dataflow.IdGenerator.DFGId
+import se.kth.cda.compiler.dataflow.IdGenerator.{DFGId, NodeId}
 import se.kth.cda.compiler.dataflow.SinkKind.Debug
 import se.kth.cda.compiler.dataflow.SourceKind.Socket
 import se.kth.cda.compiler.dataflow.TimeKind.Ingestion
@@ -39,7 +39,7 @@ final case class DFG(id: String = DFGId.generate,
 
 //case class Scope(depth: Long, parent: Option[Scope]) extends Id
 
-final case class Node(var id: String, parallelism: Long = 1, kind: NodeKind)
+final case class Node(var id: String, parallelism: Long = 1, kind: NodeKind, ord: Int = NodeId.newOrdering)
 
 sealed trait NodeKind
 
