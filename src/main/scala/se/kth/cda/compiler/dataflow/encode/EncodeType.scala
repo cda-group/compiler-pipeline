@@ -24,7 +24,7 @@ object EncodeType {
       case F64         => Json.obj(("Scalar", "F64".asJson))
       case UnitT       => Json.obj(("Scalar", "Unit".asJson))
       case StringT     => Json.obj(("Scalar", "String".asJson))
-      case Vec(elemTy) => Json.obj(("Vec", Json.obj(("elem_ty", elemTy.asJson(encodeType(newName, key))))))
+      case Vec(elemTy) => Json.obj(("Vector", Json.obj(("elem_ty", elemTy.asJson(encodeType(newName, key))))))
       case Struct(elemTys) =>
         Json.obj(
           ("Struct",
