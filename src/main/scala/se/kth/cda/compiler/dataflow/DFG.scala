@@ -3,6 +3,7 @@ package se.kth.cda.compiler.dataflow
 import se.kth.cda.arc.syntaxtree.AST.Expr
 import se.kth.cda.arc.syntaxtree.Type
 import se.kth.cda.compiler.dataflow.ChannelStrategy._
+import se.kth.cda.compiler.dataflow.IdGenerator.DFGId
 import se.kth.cda.compiler.dataflow.SinkKind.Debug
 import se.kth.cda.compiler.dataflow.SourceKind.Socket
 import se.kth.cda.compiler.dataflow.TimeKind.Ingestion
@@ -31,26 +32,8 @@ trait Trace
 
 final case class Metadata(nodes: List[Node], timestamp_extractor: Int, arc_code: String)
 
-object DFG {
-  var idCounter = 0
-  def newId: Int = {
-    val id = idCounter
-    idCounter += 1
-    id
-  }
-}
-
-object Channel {
-  var idCounter = 0
-  def newId: Int = {
-    val id = idCounter
-    idCounter += 1
-    id
-  }
-}
-
-final case class DFG(id: String = s"dfg${DFG.newId}",
-                     var timestamp_extractor: Int = 1,
+final case class DFG(id: String = DFGId.generate,
+                     var timestamp_extractor: Int = 0,
                      var nodes: List[Node],
                      target: String = "x86-64-unknown-linux-gnu")
 
@@ -61,42 +44,6 @@ final case class Node(var id: String, parallelism: Long = 1, kind: NodeKind)
 sealed trait NodeKind
 
 object NodeKind {
-  object Task {
-    var idCounter = 0
-    def newId: Int = {
-      val id = idCounter
-      idCounter += 1
-      id
-    }
-  }
-
-  object Source {
-    var idCounter = 0
-    def newId: Int = {
-      val id = idCounter
-      idCounter += 1
-      id
-    }
-  }
-
-  object Sink {
-    var idCounter = 0
-    def newId: Int = {
-      val id = idCounter
-      idCounter += 1
-      id
-    }
-  }
-
-  object Window {
-    var idCounter = 0
-    def newId: Int = {
-      val id = idCounter
-      idCounter += 1
-      id
-    }
-  }
-
   final case class Source(sourceType: Type = null,
                           var format: Format = null,
                           channelStrategy: ChannelStrategy = Forward,
