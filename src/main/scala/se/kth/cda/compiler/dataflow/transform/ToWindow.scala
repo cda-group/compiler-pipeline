@@ -50,7 +50,6 @@ object ToWindow {
     //
     private def toTumbling: Option[Tumbling] = {
       val ts = udf.params(0).symbol
-      println(s"$udf")
       val length = fix[(Expr, Map[String, Long]), Option[Long]] { f =>
         {
           case (e, c) =>
@@ -63,7 +62,6 @@ object ToWindow {
               // [ts / length]
               // [ts / 5]
               case MakeVec(Vector(Expr(BinOp(Div, lhs, rhs), _, _, _))) =>
-                println(s"$lhs $rhs")
                 lhs.kind match {
                   case Ident(lhs_symbol) if lhs_symbol.name == ts.name =>
                     rhs.kind match {

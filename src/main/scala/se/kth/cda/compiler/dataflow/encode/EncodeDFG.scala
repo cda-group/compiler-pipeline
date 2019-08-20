@@ -1,28 +1,27 @@
-package se.kth.cda.compiler.dataflow
+package se.kth.cda.compiler.dataflow.encode
 
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import se.kth.cda.arc.syntaxtree.PrettyPrint.pretty
-import se.kth.cda.arc.syntaxtree.Type
-import se.kth.cda.arc.syntaxtree.Type.Builder._
-import se.kth.cda.compiler.dataflow.ChannelKind._
-import se.kth.cda.compiler.dataflow.NodeKind._
-import se.kth.cda.compiler.dataflow.SinkKind._
-import se.kth.cda.compiler.dataflow.SourceKind._
-import se.kth.cda.compiler.dataflow.ChannelStrategy._
-import se.kth.cda.compiler.dataflow.KeyKind._
+import se.kth.cda.compiler.dataflow.ChannelKind.{Local, Remote}
+import se.kth.cda.compiler.dataflow.ChannelStrategy.{Broadcast, Feedback, Forward, Shuffle}
+import se.kth.cda.compiler.dataflow.KeyKind.{Primitive, Struct}
+import se.kth.cda.compiler.dataflow.NodeKind.{Sink, Source, Task, Window}
 import se.kth.cda.compiler.dataflow.TaskKind._
-import se.kth.cda.compiler.dataflow.TimeKind._
-import se.kth.cda.compiler.dataflow.WindowAssigner._
-import se.kth.cda.compiler.dataflow.WindowKind._
+import se.kth.cda.compiler.dataflow.TimeKind.{Event, Ingestion, Processing}
+import se.kth.cda.compiler.dataflow.WindowAssigner.{Sliding, Tumbling}
+import se.kth.cda.compiler.dataflow.WindowKind.{All, Keyed}
+import se.kth.cda.compiler.dataflow._
+import se.kth.cda.compiler.dataflow.encode.EncodeType._
 
-object JsonEncoder {
+object EncodeDFG {
 
   implicit val encodeDFG: Encoder[DFG] = dfg =>
     Json.obj(
       ("id", dfg.id.asJson),
       ("target", dfg.target.asJson),
       ("nodes", dfg.nodes.asJson),
+      ("timestamp_extractor", dfg.timestamp_extractor.asJson),
   )
 
   implicit val encodeNode: Encoder[Node] = node =>
@@ -37,7 +36,8 @@ object JsonEncoder {
       Json.obj(
         ("Source",
          Json.obj(
-           ("source_type", source.sourceType.render.asJson),
+           ("source_type", source.sourceType.asJson),
+           ("format", source.format.asJson),
            ("channel_strategy", source.channelStrategy.asJson),
            ("successors", source.successors.asJson),
            ("kind", source.kind.asJson),
@@ -47,8 +47,8 @@ object JsonEncoder {
         ("StreamTask",
          Json.obj(
            ("weld_code", pretty(task.weldFunc).asJson),
-           ("input_type", task.inputType.render.asJson),
-           ("output_type", task.outputType.render.asJson),
+           ("input_type", task.inputType.asJson),
+           ("output_type", task.outputType.asJson),
            ("channel_strategy", task.channelStrategy.asJson),
            ("predecessor", task.predecessor.id.asJson),
            ("successors", task.successors.asJson),
@@ -58,7 +58,8 @@ object JsonEncoder {
       Json.obj(
         ("Sink",
          Json.obj(
-           ("sink_type", sink.sinkType.render.asJson),
+           ("sink_type", sink.sinkType.asJson),
+           ("format", sink.format.asJson),
            ("predecessor", sink.predecessor.id.asJson),
          )))
     case window: Window =>
@@ -76,12 +77,20 @@ object JsonEncoder {
   }
 
   implicit val encodeSourceKind: Encoder[SourceKind] = {
-    case socket: Socket =>
+    case socket: SourceKind.Socket =>
       Json.obj(
         ("Socket",
          Json.obj(
            ("host", socket.host.asJson),
            ("port", socket.port.asJson),
+         ),
+        ),
+      )
+    case localfile: SourceKind.LocalFile =>
+      Json.obj(
+        ("LocalFile",
+         Json.obj(
+           ("path", localfile.path.asJson),
          ),
         ),
       )
@@ -97,7 +106,29 @@ object JsonEncoder {
   }
 
   implicit val encodeSinkKind: Encoder[SinkKind] = {
-    case Debug => "Debug".asJson
+    case SinkKind.Debug => "Debug".asJson
+    case socket: SinkKind.Socket =>
+      Json.obj(
+        ("Socket",
+         Json.obj(
+           ("host", socket.host.asJson),
+           ("port", socket.port.asJson),
+         ),
+        ))
+    case localfile: SinkKind.LocalFile =>
+      Json.obj(
+        ("LocalFile",
+         Json.obj(
+           ("path", localfile.path.asJson),
+         ),
+        )
+      )
+  }
+
+  implicit val encodeFormat: Encoder[Format] = {
+    case Format.CSV  => "CSV".asJson
+    case Format.JSON => "JSON".asJson
+    case Format.UTF8 => "UTF8".asJson
   }
 
   implicit val encodeChannelKind: Encoder[ChannelKind] = {
@@ -117,8 +148,8 @@ object JsonEncoder {
 
   implicit val encodeWindowFunction: Encoder[WindowFunction] = function =>
     Json.obj(
-      ("input_type", function.inputType.render.asJson),
-      ("output_type", function.outputType.render.asJson),
+      ("input_type", function.inputType.asJson),
+      ("output_type", function.outputType.asJson),
       ("builder_type", function.builderType.asJson),
       ("builder", pretty(function.init).asJson),
       ("udf", pretty(function.lift).asJson),
@@ -148,13 +179,13 @@ object JsonEncoder {
     case Primitive      => "Primitive".asJson
   }
 
-  implicit val encodeType: Encoder[Type] = {
-    case _: Appender    => "Appender".asJson
-    case _: Merger      => "Merger".asJson
-    case _: VecMerger   => "VecMerger".asJson
-    case _: DictMerger  => "DictMerger".asJson
-    case _: GroupMerger => "GroupMerger".asJson
-    case _              => ???
-  }
+  //implicit val encodeType: Encoder[Type] = {
+  //  case _: Appender    => "Appender".asJson
+  //  case _: Merger      => "Merger".asJson
+  //  case _: VecMerger   => "VecMerger".asJson
+  //  case _: DictMerger  => "DictMerger".asJson
+  //  case _: GroupMerger => "GroupMerger".asJson
+  //  case _              => ???
+  //}
 
 }

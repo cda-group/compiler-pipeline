@@ -7,7 +7,7 @@ object OptimizeDFG {
 
   import se.kth.cda.compiler.dataflow.optimize.Fusion._
   import se.kth.cda.compiler.dataflow.optimize.Specialization._
-  import se.kth.cda.compiler.dataflow.JsonEncoder.encodeDFG
+  import se.kth.cda.compiler.dataflow.encode.EncodeDFG.encodeDFG
   implicit class OptimizeDFG(val dfg: DFG) extends AnyVal {
     def optimize: DFG = {
       //println(encodeDFG(dfg))

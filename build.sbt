@@ -18,7 +18,8 @@ lazy val compilerPipeline= (project in file("."))
        "com.lihaoyi" %% "pprint" % "0.5.5",
        "com.chuusai" %% "shapeless" % "2.3.3",
        "io.circe" %% "circe-core" % "0.11.1",
-       "io.circe" %% "circe-generic" % "0.11.1"
+       "io.circe" %% "circe-generic" % "0.11.1",
+       "io.circe" %% "circe-parser" % "0.11.1"
     )
   ).dependsOn(arc)
 
@@ -77,7 +78,7 @@ scalacOptions ++= Seq(
   "-language:implicitConversions", // Allow definition of implicit functions called views
   "-unchecked", // Enable additional warnings where generated code depends on assumptions.
   "-Xcheckinit", // Wrap field accessors to throw an exception on uninitialized access.
-  "-Xdev", // Indicates user is a developer - issue warnings about anything which seems amiss
+  //"-Xdev", // Indicates user is a developer - issue warnings about anything which seems amiss
   "-Xlint:_", // Enable all lint warnings
   "-Xfuture", // Turn on future language features.
   "-Yno-adapted-args", // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.

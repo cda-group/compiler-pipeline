@@ -3,7 +3,6 @@ package se.kth.cda.compiler.dataflow
 import se.kth.cda.arc.syntaxtree.AST.Expr
 import se.kth.cda.arc.syntaxtree.Type
 import se.kth.cda.compiler.dataflow.ChannelStrategy._
-import se.kth.cda.compiler.dataflow.DFG.newId
 import se.kth.cda.compiler.dataflow.SinkKind.Debug
 import se.kth.cda.compiler.dataflow.SourceKind.Socket
 import se.kth.cda.compiler.dataflow.TimeKind.Ingestion
@@ -28,17 +27,11 @@ import se.kth.cda.compiler.dataflow.WindowKind.All
 //  val trace: Option[Trace] = None
 //  val scope: Option[Scope] = None
 //}
+trait Trace
+
+final case class Metadata(nodes: List[Node], timestamp_extractor: Int, arc_code: String)
 
 object DFG {
-  var idCounter = 0
-  def newId: Int = {
-    val id = idCounter
-    idCounter += 1
-    id
-  }
-}
-
-object Node {
   var idCounter = 0
   def newId: Int = {
     val id = idCounter
@@ -56,23 +49,65 @@ object Channel {
   }
 }
 
-trait Trace
-
-final case class DFG(id: String = s"dfg${DFG.newId}", var nodes: List[Node], target: String = "x86-64-unknown-linux-gnu")
+final case class DFG(id: String = s"dfg${DFG.newId}",
+                     var timestamp_extractor: Int = 1,
+                     var nodes: List[Node],
+                     target: String = "x86-64-unknown-linux-gnu")
 
 //case class Scope(depth: Long, parent: Option[Scope]) extends Id
 
-final case class Node(var id: String = s"node${Node.newId}", parallelism: Long = 1, kind: NodeKind)
+final case class Node(var id: String, parallelism: Long = 1, kind: NodeKind)
 
 sealed trait NodeKind
 
 object NodeKind {
-  final case class Source(sourceType: Type,
+  object Task {
+    var idCounter = 0
+    def newId: Int = {
+      val id = idCounter
+      idCounter += 1
+      id
+    }
+  }
+
+  object Source {
+    var idCounter = 0
+    def newId: Int = {
+      val id = idCounter
+      idCounter += 1
+      id
+    }
+  }
+
+  object Sink {
+    var idCounter = 0
+    def newId: Int = {
+      val id = idCounter
+      idCounter += 1
+      id
+    }
+  }
+
+  object Window {
+    var idCounter = 0
+    def newId: Int = {
+      val id = idCounter
+      idCounter += 1
+      id
+    }
+  }
+
+  final case class Source(sourceType: Type = null,
+                          var format: Format = null,
                           channelStrategy: ChannelStrategy = Forward,
                           var successors: Vector[ChannelKind] = Vector.empty,
-                          kind: SourceKind = Socket("localhost", 1337))
+                          var kind: SourceKind = null)
       extends NodeKind
-  final case class Sink(sinkType: Type, var predecessor: Node = null, kind: SinkKind = Debug) extends NodeKind
+  final case class Sink(sinkType: Type = null,
+                        var format: Format = null,
+                        var predecessor: Node = null,
+                        var kind: SinkKind = null)
+      extends NodeKind
   final case class Task(var weldFunc: Expr,
                         inputType: Type,
                         outputType: Type,
@@ -92,7 +127,12 @@ object NodeKind {
       extends NodeKind
 }
 
-final case class WindowFunction(inputType: Type, outputType: Type, builderType: Type, init: Expr, lift: Expr, lower: Expr)
+final case class WindowFunction(inputType: Type,
+                                outputType: Type,
+                                builderType: Type,
+                                init: Expr,
+                                lift: Expr,
+                                lower: Expr)
 
 sealed trait ChannelKind
 
@@ -104,13 +144,24 @@ object ChannelKind {
 sealed trait SourceKind
 
 object SourceKind {
-  final case class Socket(host: String, port: Long) extends SourceKind
+  final case class Socket(var host: String, var port: Long) extends SourceKind
+  final case class LocalFile(var path: String) extends SourceKind
 }
 
 sealed trait SinkKind
 
 object SinkKind {
   final case object Debug extends SinkKind
+  final case class Socket(var host: String, var port: Long) extends SinkKind
+  final case class LocalFile(var path: String) extends SinkKind
+}
+
+sealed trait Format
+
+object Format {
+  final case object JSON extends Format
+  final case object CSV extends Format
+  final case object UTF8 extends Format
 }
 
 sealed trait TaskKind
