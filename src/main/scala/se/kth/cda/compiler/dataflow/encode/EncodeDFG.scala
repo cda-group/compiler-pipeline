@@ -5,6 +5,7 @@ import io.circe.{Encoder, Json}
 import se.kth.cda.arc.syntaxtree.PrettyPrint.pretty
 import se.kth.cda.compiler.dataflow.ChannelKind.{Local, Remote}
 import se.kth.cda.compiler.dataflow.ChannelStrategy.{Broadcast, Feedback, Forward, Shuffle}
+import se.kth.cda.compiler.dataflow.IdGenerator.StructId
 import se.kth.cda.compiler.dataflow.KeyKind.{Primitive, Struct}
 import se.kth.cda.compiler.dataflow.NodeKind.{Sink, Source, Task, Window}
 import se.kth.cda.compiler.dataflow.TaskKind._
@@ -33,15 +34,12 @@ object EncodeDFG {
 
   implicit def encodeNodeKind(id: String): Encoder[NodeKind] = {
     case source: Source =>
-      println(source.sourceType)
-      println(source.format)
-      println(source.kind)
       Json.obj(
         ("Source",
          Json.obj(
            ("source_type", source.sourceType.asJson(encodeType(source.successors(0) match {
-             case Local(node)     => id + node.id
-             case Remote(node, _) => id + node.id
+             case Local(node)     => StructId.from(id, node.id)
+             case Remote(node, _) => StructId.from(id, node.id)
            }))),
            ("format", source.format.asJson),
            ("channel_strategy", source.channelStrategy.asJson),
@@ -53,10 +51,10 @@ object EncodeDFG {
         ("Task",
          Json.obj(
            ("weld_code", pretty(task.weldFunc).asJson),
-           ("input_type", task.inputType.asJson(encodeType(task.predecessor.id + id))),
+           ("input_type", task.inputType.asJson(encodeType(StructId.from(task.predecessor.id, id)))),
            ("output_type", task.outputType.asJson(encodeType(task.successors(0) match {
-             case Local(node)     => id + node.id
-             case Remote(node, _) => id + node.id
+             case Local(node)     => StructId.from(id, node.id)
+             case Remote(node, _) => StructId.from(id, node.id)
            }))),
            ("channel_strategy", task.channelStrategy.asJson),
            ("predecessor", task.predecessor.id.asJson),
@@ -67,7 +65,7 @@ object EncodeDFG {
       Json.obj(
         ("Sink",
          Json.obj(
-           ("sink_type", sink.sinkType.asJson(encodeType(sink.predecessor.id + id))),
+           ("sink_type", sink.sinkType.asJson(encodeType(StructId.from(sink.predecessor.id, id)))),
            ("format", sink.format.asJson),
            ("predecessor", sink.predecessor.id.asJson),
          )))

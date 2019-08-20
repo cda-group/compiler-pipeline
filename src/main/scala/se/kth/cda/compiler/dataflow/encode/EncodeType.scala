@@ -5,30 +5,23 @@ import io.circe.syntax._
 import se.kth.cda.arc.syntaxtree.{MergeOp, Type}
 import se.kth.cda.arc.syntaxtree.Type.Builder._
 import se.kth.cda.arc.syntaxtree.Type._
+import se.kth.cda.compiler.dataflow.IdGenerator.StructId
 
 object EncodeType {
-  object StructId {
-    var idCounter = 0
-    def newId: Int = {
-      val id = idCounter
-      idCounter += 1
-      id
-    }
-  }
 
-  implicit def encodeType(name: String = s"struct_${StructId.newId}", key: Option[Long] = None): Encoder[Type] = ty => {
-    val newName = name + "_"
+  implicit def encodeType(name: String = StructId.newId, key: Option[Long] = None): Encoder[Type] = ty => {
+    val newName = StructId.next(name)
     ty match {
       case I8          => Json.obj(("Scalar", "I8".asJson))
       case I16         => Json.obj(("Scalar", "I16".asJson))
       case I32         => Json.obj(("Scalar", "I32".asJson))
       case I64         => Json.obj(("Scalar", "I64".asJson))
-      case U8          => Json.obj(("Scalar", "I8".asJson))
-      case U16         => Json.obj(("Scalar", "I16".asJson))
-      case U32         => Json.obj(("Scalar", "I32".asJson))
-      case U64         => Json.obj(("Scalar", "I64".asJson))
-      case F32         => Json.obj(("Scalar", "I32".asJson))
-      case F64         => Json.obj(("Scalar", "I64".asJson))
+      case U8          => Json.obj(("Scalar", "U8".asJson))
+      case U16         => Json.obj(("Scalar", "U16".asJson))
+      case U32         => Json.obj(("Scalar", "U32".asJson))
+      case U64         => Json.obj(("Scalar", "U64".asJson))
+      case F32         => Json.obj(("Scalar", "F32".asJson))
+      case F64         => Json.obj(("Scalar", "F64".asJson))
       case UnitT       => Json.obj(("Scalar", "Unit".asJson))
       case StringT     => Json.obj(("Scalar", "String".asJson))
       case Vec(elemTy) => Json.obj(("Vec", Json.obj(("elem_ty", elemTy.asJson(encodeType(newName, key))))))

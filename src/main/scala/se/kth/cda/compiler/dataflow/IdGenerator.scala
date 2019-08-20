@@ -65,5 +65,18 @@ object IdGenerator {
     }
   }
 
+  object StructId {
+    def from(pred: String, succ: String): String = {
+      s"struct_${pred}_${succ}_"
+    }
+    def next(id: String): String = id + "x"
+    var idCounter = 0
+    def newId: String = {
+      val id = idCounter
+      idCounter += 1
+      s"struct_${id}_"
+    }
+  }
+
 
 }
