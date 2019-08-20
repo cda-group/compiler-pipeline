@@ -43,7 +43,7 @@ object ToFilter {
                             sym2.name == weldBuilder.symbol.name &&
                             sym3.name == weldElement.symbol.name =>
                         Not(cond).toExpr(Bool)
-                      case _ => ???
+                      case _ => e
                     }
                   case _ => ???
                 }
