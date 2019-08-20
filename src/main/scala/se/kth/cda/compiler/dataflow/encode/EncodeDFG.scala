@@ -28,15 +28,21 @@ object EncodeDFG {
     Json.obj(
       ("id", node.id.asJson),
       ("parallelism", node.parallelism.asJson),
-      ("kind", node.kind.asJson),
+      ("kind", node.kind.asJson(node.id)),
   )
 
-  implicit val encodeNodeKind: Encoder[NodeKind] = {
+  implicit def encodeNodeKind(id: String): Encoder[NodeKind] = {
     case source: Source =>
+      println(source.sourceType)
+      println(source.format)
+      println(source.kind)
       Json.obj(
         ("Source",
          Json.obj(
-           ("source_type", source.sourceType.asJson),
+           ("source_type", source.sourceType.asJson(encodeType(source.successors(0) match {
+             case Local(node)     => id + node.id
+             case Remote(node, _) => id + node.id
+           }))),
            ("format", source.format.asJson),
            ("channel_strategy", source.channelStrategy.asJson),
            ("successors", source.successors.asJson),
@@ -44,11 +50,14 @@ object EncodeDFG {
          )))
     case task: Task =>
       Json.obj(
-        ("StreamTask",
+        ("Task",
          Json.obj(
            ("weld_code", pretty(task.weldFunc).asJson),
-           ("input_type", task.inputType.asJson),
-           ("output_type", task.outputType.asJson),
+           ("input_type", task.inputType.asJson(encodeType(task.predecessor.id + id))),
+           ("output_type", task.outputType.asJson(encodeType(task.successors(0) match {
+             case Local(node)     => id + node.id
+             case Remote(node, _) => id + node.id
+           }))),
            ("channel_strategy", task.channelStrategy.asJson),
            ("predecessor", task.predecessor.id.asJson),
            ("successors", task.successors.asJson),
@@ -58,7 +67,7 @@ object EncodeDFG {
       Json.obj(
         ("Sink",
          Json.obj(
-           ("sink_type", sink.sinkType.asJson),
+           ("sink_type", sink.sinkType.asJson(encodeType(sink.predecessor.id + id))),
            ("format", sink.format.asJson),
            ("predecessor", sink.predecessor.id.asJson),
          )))
@@ -148,9 +157,9 @@ object EncodeDFG {
 
   implicit val encodeWindowFunction: Encoder[WindowFunction] = function =>
     Json.obj(
-      ("input_type", function.inputType.asJson),
-      ("output_type", function.outputType.asJson),
-      ("builder_type", function.builderType.asJson),
+      ("input_type", function.inputType.asJson(encodeType())),
+      ("output_type", function.outputType.asJson(encodeType())),
+      ("builder_type", function.builderType.asJson(encodeType())),
       ("builder", pretty(function.init).asJson),
       ("udf", pretty(function.lift).asJson),
       ("materialiser", pretty(function.lower).asJson),
