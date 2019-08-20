@@ -1,6 +1,7 @@
 package se.kth.cda.compiler.dataflow.enrich
 
 import se.kth.cda.compiler.dataflow.{DFG, Metadata, NodeKind}
+import se.kth.cda.compiler.dataflow.pretty.PrettyPrint._
 
 object EnrichDFG {
   // Inserts metadata into DFG
