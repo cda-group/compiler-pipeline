@@ -28,7 +28,7 @@ object EncodeType {
       case Struct(elemTys) =>
         Json.obj(
           ("Struct",
-           Json.obj(("name", newName.asJson), ("elem_tys", elemTys.map(_.asJson(encodeType(newName, key))).asJson))))
+           Json.obj(("id", newName.asJson), ("field_tys", elemTys.map(_.asJson(encodeType(newName, key))).asJson))))
       case Dict(keyTy, valueTy) =>
         Json.obj(
           ("Dict",
