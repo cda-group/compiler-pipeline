@@ -46,6 +46,7 @@ object ToFlatMap {
       val weldBody = fix[Expr, Expr] { f => expr =>
         if (expr.ty.isArcType && expr.ty.isBuilderType) {
           expr.kind match {
+            case e: Ident       => e.toExpr(expr.ty.toAppender)
             case e: Merge       => Merge(f(e.builder), e.value).toExpr(expr.ty.toAppender)
             case e: If          => If(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty.toAppender)
             case e: Select      => Select(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty.toAppender)

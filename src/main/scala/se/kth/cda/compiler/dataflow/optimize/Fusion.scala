@@ -76,7 +76,7 @@ object Fusion {
         case self: Task =>
           self.predecessor.kind match {
             // For now, only allow fusing horizontally if there are no siblings
-            case pred: Task if pred.weldFunc.is_pure && !self.predecessor.has_siblings =>
+            case pred: Task if pred.weldFunc.isPure && !self.predecessor.hasSiblings =>
               // Each successor of self should point to the predecessor of self
               self.successors.foreach { channel =>
                 val succ = channel match {

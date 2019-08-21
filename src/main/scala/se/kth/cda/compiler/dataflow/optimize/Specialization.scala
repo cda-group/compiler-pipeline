@@ -18,10 +18,10 @@ object Specialization {
         case task: Task =>
           task.weldFunc.kind match {
             case udf: Lambda =>
-              val (weldFunc, kind) = (udf.selectivity, udf.fan_out) match {
-                case (1, 1)          => (udf.toMap, TaskKind.Map)
-                case (s, 1) if s < 1 => (udf.toFilter, TaskKind.Filter)
-                case _               => (udf.toFlatmap, TaskKind.FlatMap)
+              val (weldFunc, kind) = (udf.selectivity, udf.fanOut, udf.mutationFree) match {
+                case (1, 1, _)             => (udf.toMap, TaskKind.Map)
+                case (s, 1, true) if s < 1 => (udf.toFilter, TaskKind.Filter)
+                case _                     => (udf.toFlatmap, TaskKind.FlatMap)
               }
               task.weldFunc = weldFunc
               task.kind = kind

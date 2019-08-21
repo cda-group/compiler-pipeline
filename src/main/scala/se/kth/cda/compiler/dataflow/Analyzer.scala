@@ -35,7 +35,7 @@ object Analyzer {
     }
 
     // Calculates the number of output channels
-    def fan_out: Int = {
+    def fanOut: Int = {
       fix[Type, Int] { f =>
         {
           case _: StreamAppender => 1
@@ -46,12 +46,37 @@ object Analyzer {
       }(self.body.ty)
     }
 
+    def mutationFree: Boolean = {
+      val Vector(_, _, elem) = self.params
+      fix[Expr, Boolean] { f => expr =>
+        if (expr.ty.isArcType && expr.ty.isBuilderType) {
+          expr.kind match {
+            case e: Merge =>
+              e.value.kind match {
+                case id: Ident if id.symbol.name == elem.symbol.name => f(e.builder)
+                case _                                               => false
+              }
+            case e: For         => f(e.builder) && f(e.body)
+            case e: If          => f(e.onTrue) && f(e.onFalse)
+            case e: Select      => f(e.onTrue) && f(e.onFalse)
+            case e: Let         => f(e.value) && f(e.body)
+            case e: Application => e.args.forall(f) && f(e.expr)
+            case e: Lambda      => f(e.body)
+            case e: MakeStruct  => e.elems.forall(f)
+            case _              => true
+          }
+        } else {
+          true
+        }
+      }(self.body)
+    }
+
   }
 
   implicit class ExprAnalyzer(val self: Expr) extends AnyVal {
 
     // Finds out if an expression is side-effect free
-    def is_pure: Boolean = {
+    def isPure: Boolean = {
       fix[Expr, Boolean] { f => expr =>
         expr.kind match {
           case _: CUDF => false
@@ -70,15 +95,15 @@ object Analyzer {
 
   implicit class NodeAnalyzer(val self: Node) extends AnyVal {
 
-    def num_siblings: Int =
+    def numSiblings: Int =
       self.kind match {
-        case _: Task   => self.num_successors - 1
-        case _: Sink   => self.num_successors - 1
-        case _: Window => self.num_successors - 1
+        case _: Task   => self.numSuccessors - 1
+        case _: Sink   => self.numSuccessors - 1
+        case _: Window => self.numSuccessors - 1
         case _         => 0
       }
 
-    def num_successors: Int =
+    def numSuccessors: Int =
       self.kind match {
         case kind: Source => kind.successors.length
         case kind: Task   => kind.successors.length
@@ -86,7 +111,7 @@ object Analyzer {
         case _            => 0
       }
 
-    def has_siblings: Boolean = num_siblings > 0
+    def hasSiblings: Boolean = numSiblings > 0
 
   }
 

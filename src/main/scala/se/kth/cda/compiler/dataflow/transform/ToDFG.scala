@@ -81,22 +81,23 @@ object ToDFG {
       case _ => ???
     }
 
-  private def transformSource(iter: Iter, nodes: Map[String, Node]): (Type, Node, Int) =
+  private def transformSource(iter: Iter, nodes: Map[String, Node]): (Type, Node, Int) = {
     iter match {
       // Non-keyed stream
-      case Iter(NextIter | UnknownIter, source, _, _, _, _, _, _) =>
+      case Iter(NextIter, source, _, _, _, _, _, _) =>
         val Stream(inputType) = source.ty
         val (from, index) = source.kind match {
           // for(source, sink, ...)
           case Ident(Symbol(sourceName, _, _)) => (nodes(sourceName), 0)
           // for(source.$0, sink, ...)
           case Projection(Expr(Ident(Symbol(sourceName, _, _)), _, _, _), i) => (nodes(sourceName), i)
-          case _                                                             => ???
+          case _ => ???
         }
         (inputType, from, index)
       //case Iter(KeyByIter, source, _, _, _, _, _, keyFunc) =>
       case _ => ???
     }
+  }
 
   private def transformSink(sink: Expr, func: Expr, inputType: Type, precedessor: Node): NodeKind =
     sink match {
