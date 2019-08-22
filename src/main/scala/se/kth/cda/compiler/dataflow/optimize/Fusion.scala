@@ -7,9 +7,10 @@ import se.kth.cda.compiler.dataflow.TaskKind.FlatMap
 import se.kth.cda.compiler.dataflow.Analyzer._
 import se.kth.cda.compiler.dataflow.ChannelKind.{Local, Remote}
 import se.kth.cda.arc.syntaxtree.AST.ExprKind._
-import se.kth.cda.arc.syntaxtree.Type.Function
+import se.kth.cda.arc.syntaxtree.Type.{Function, I64}
 import se.kth.cda.compiler.Utils._
 import se.kth.cda.arc.syntaxtree.ASTUtils._
+import se.kth.cda.arc.syntaxtree.{CompoundType, ConcreteType, Type}
 
 object Fusion {
 
@@ -106,33 +107,46 @@ object Fusion {
       ???
     }
 
-    private def fuseWeldFuncs(weldFunc1: Expr, weldFunc2: Expr): Expr = {
-      (weldFunc1.kind, weldFunc2.kind) match {
-        case (Lambda(params1, body1), Lambda(_, body2)) =>
+    private def fuseWeldFuncs(predFunc: Expr, succFunc: Expr): Expr = {
+      (predFunc.kind, succFunc.kind) match {
+        case (Lambda(predParams, predBody), Lambda(succParams, succBody)) =>
+          val Vector(predB, predI, predE) = predParams
+          val Vector(succB, succI, succE) = succParams
+          val fusedParams = Vector(succB, predI, predE)
+          val placeholder = Literal.I64("0L", 0).toExpr(Type.I64)
           Lambda(
-            params1,
+            fusedParams,
             fix[Expr, Expr] { f =>
               {
-                expr =>
-                  if (expr.ty.isArcType && expr.ty.isBuilderType) {
-                    expr.kind match {
-                      case e: Merge       => Application(weldFunc2, Vector(e.builder, e.value)).toExpr(expr.ty)
-                      case e: If          => If(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty)
-                      case e: Select      => Select(e.cond, f(e.onTrue), f(e.onFalse)).toExpr(expr.ty)
-                      case e: For         => For(e.iterator, e.builder, f(e.body)).toExpr(expr.ty)
-                      case e: Lambda      => Lambda(e.params, f(e.body)).toExpr(expr.ty)
-                      case e: Application => Application(f(expr), e.args.map(arg => f(arg))).toExpr(expr.ty)
-                      case e: Let         => Let(e.symbol, e.bindingTy, f(e.value), f(e.body)).toExpr(expr.ty)
-                      case _              => expr
+                pred =>
+                  if (pred.ty.isArcType && pred.ty.isBuilderType) {
+                    val newKind = pred.kind match {
+                      case e: Merge       => Application(succFunc, Vector(e.builder, placeholder, e.value))
+                      case e: If          => If(e.cond, f(e.onTrue), f(e.onFalse))
+                      case e: Select      => Select(e.cond, f(e.onTrue), f(e.onFalse))
+                      case e: For         => For(e.iterator, e.builder, f(e.body))
+                      case e: Lambda      => Lambda(e.params, f(e.body))
+                      case e: Application => Application(f(pred), e.args.map(f))
+                      case e: Let         => Let(e.symbol, e.bindingTy, f(e.value), f(e.body))
+                      case _              => pred.kind
                     }
+                    newKind.toExpr(succB.ty) // TODO: Does not work for multiple inputs
                   } else {
-                    expr
+                    pred
                   }
               }
-            }(body1)
-          ).toExpr(Function(params1.map(_.ty), body2.ty))
+            }(predBody)
+          ).toExpr(Function(fusedParams.map(_.ty), succBody.ty))
         case _ => ???
       }
     }
+
+    //private def fuseType(predTy: Type, succTy: Type): Type = {
+    //  predTy match {
+    //    case func: Function =>
+    //    case compoundType: CompoundType =>
+    //    case Type.TypeVariable(id) =>
+    //  }
+    //}
   }
 }
