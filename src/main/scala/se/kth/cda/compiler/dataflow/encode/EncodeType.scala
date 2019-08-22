@@ -12,19 +12,21 @@ object EncodeType {
   implicit def encodeType(name: String = StructId.newId, key: Option[Long] = None): Encoder[Type] = ty => {
     val newName = StructId.next(name)
     ty match {
-      case I8          => Json.obj(("Scalar", "I8".asJson))
-      case I16         => Json.obj(("Scalar", "I16".asJson))
-      case I32         => Json.obj(("Scalar", "I32".asJson))
-      case I64         => Json.obj(("Scalar", "I64".asJson))
-      case U8          => Json.obj(("Scalar", "U8".asJson))
-      case U16         => Json.obj(("Scalar", "U16".asJson))
-      case U32         => Json.obj(("Scalar", "U32".asJson))
-      case U64         => Json.obj(("Scalar", "U64".asJson))
-      case F32         => Json.obj(("Scalar", "F32".asJson))
-      case F64         => Json.obj(("Scalar", "F64".asJson))
-      case UnitT       => Json.obj(("Scalar", "Unit".asJson))
-      case StringT     => Json.obj(("Scalar", "String".asJson))
-      case Vec(elemTy) => Json.obj(("Vector", Json.obj(("elem_ty", elemTy.asJson(encodeType(newName, key))))))
+      case Bool         => Json.obj(("Scalar", "Bool".asJson))
+      case I8           => Json.obj(("Scalar", "I8".asJson))
+      case I16          => Json.obj(("Scalar", "I16".asJson))
+      case I32          => Json.obj(("Scalar", "I32".asJson))
+      case I64          => Json.obj(("Scalar", "I64".asJson))
+      case U8           => Json.obj(("Scalar", "U8".asJson))
+      case U16          => Json.obj(("Scalar", "U16".asJson))
+      case U32          => Json.obj(("Scalar", "U32".asJson))
+      case U64          => Json.obj(("Scalar", "U64".asJson))
+      case F32          => Json.obj(("Scalar", "F32".asJson))
+      case F64          => Json.obj(("Scalar", "F64".asJson))
+      case UnitT        => Json.obj(("Scalar", "Unit".asJson))
+      case StringT      => Json.obj(("Scalar", "String".asJson))
+      case Simd(elemTy) => Json.obj(("Simd", elemTy.asJson(encodeType(newName, key))))
+      case Vec(elemTy)  => Json.obj(("Vector", Json.obj(("elem_ty", elemTy.asJson(encodeType(newName, key))))))
       case Struct(elemTys) =>
         Json.obj(
           ("Struct",
@@ -51,6 +53,7 @@ object EncodeType {
            Json.obj(("key_ty", keyTy.asJson(encodeType(newName, key))),
                     ("value_ty", valueTy.asJson(encodeType(newName, key))),
                     ("op_ty", opTy.asJson))))
+      case _ => ???
     }
   }
 

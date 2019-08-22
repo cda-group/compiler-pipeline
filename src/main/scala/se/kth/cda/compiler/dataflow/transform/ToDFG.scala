@@ -54,6 +54,7 @@ object ToDFG {
             sink.predecessor = operator
             sink.predecessor.kind match {
               case task: Task => task.successors = task.successors :+ Local(node = node)
+              case _ => ???
             }
             operator +: nodes.values.toList // TODO: Allow multiple sinks
           case _ => ???

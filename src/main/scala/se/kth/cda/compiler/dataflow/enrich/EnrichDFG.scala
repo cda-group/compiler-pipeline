@@ -19,6 +19,7 @@ object EnrichDFG {
                 case (sink: NodeKind.Sink, metadataSink: NodeKind.Sink) =>
                   sink.format = metadataSink.format
                   sink.kind = metadataSink.kind
+                case _ => ???
               }
             case None => ()
         })
