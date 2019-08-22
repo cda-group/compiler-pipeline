@@ -37,7 +37,7 @@ final case class DFG(id: String = DFGId.generate,
 
 //case class Scope(depth: Long, parent: Option[Scope]) extends Id
 
-final case class Node(var id: String, parallelism: Long = 1, kind: NodeKind, ord: Int = NodeId.newOrdering)
+final case class Node(var id: String, parallelism: Long = 1, kind: NodeKind, ord: Int = NodeId.newGlobalOrd)
 
 sealed trait NodeKind
 
@@ -55,7 +55,7 @@ object NodeKind {
       extends NodeKind
   final case class Task(var weldFunc: Expr,
                         inputType: Type,
-                        outputType: Type,
+                        var outputType: Type,
                         var predecessor: Node,
                         var successors: Vector[ChannelKind] = Vector.empty,
                         channelStrategy: ChannelStrategy = Forward,

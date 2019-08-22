@@ -22,7 +22,7 @@ object Compiler {
     }
     //print(metadata)
 
-    IdGenerator.reset()
+    IdGenerator.resetGlobal()
 
     val inputStream = CharStreams.fromString(metadata.arc_code)
     val lexer = new ArcLexer(inputStream)
@@ -33,10 +33,12 @@ object Compiler {
     //val expanded = MacroExpansion.expand(ast).get
     val typed = TypeInference.solve(ast).get
     val dfg = typed.toDFG
+    //import se.kth.cda.arc.syntaxtree.PrettyPrint._
+    //println(pretty(typed))
     //println(dfg.pretty)
 
     val enriched_dfg = dfg.enrich(metadata)
-    val optimized_dfg = enriched_dfg.optimize(fusion = false)
+    val optimized_dfg = enriched_dfg.optimize(fusion = true)
     //println(optimized_dfg.pretty)
     //println(enriched_dfg.pretty)
 

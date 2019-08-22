@@ -8,6 +8,7 @@ import se.kth.cda.arc.syntaxtree.Type.Function
 import se.kth.cda.compiler.Utils._
 import se.kth.cda.compiler.dataflow.Analyzer._
 import se.kth.cda.compiler.dataflow.ChannelKind.{Local, Remote}
+import se.kth.cda.compiler.dataflow.IdGenerator.NodeId
 import se.kth.cda.compiler.dataflow.Node
 import se.kth.cda.compiler.dataflow.NodeKind.{Sink, Source, Task, Window}
 
@@ -92,7 +93,8 @@ object Fusion {
               }
               pred.successors = self.successors
               pred.weldFunc = fuseWeldFuncs(pred.weldFunc, self.weldFunc)
-              self.predecessor.id = s"${self.predecessor.id}_${node.id}"
+              pred.outputType = self.outputType
+              self.predecessor.id = NodeId.fuse(self.predecessor.id, node.id)
               self.removed = true
             case _ => ()
           }

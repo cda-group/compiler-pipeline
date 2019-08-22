@@ -9,7 +9,9 @@ object OptimizeDFG {
   import se.kth.cda.compiler.dataflow.optimize.Specialization._
   implicit class OptimizeDFG(val dfg: DFG) extends AnyVal {
     def optimize(fusion: Boolean = true): DFG = {
-      //println(encodeDFG(dfg))
+      //import se.kth.cda.compiler.dataflow.pretty.PrettyPrint._
+      //import se.kth.cda.compiler.dataflow.deploy.Deploy._
+      //println(dfg.order.pretty)
       if (fusion) {
         dfg.nodes
           .filter(_.kind match {
@@ -33,6 +35,8 @@ object OptimizeDFG {
           case _       => false
         })
         .foreach(_.specialize())
+
+      //println(dfg.order.pretty)
 
       dfg
     }

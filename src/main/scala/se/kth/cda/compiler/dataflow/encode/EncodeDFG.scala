@@ -28,59 +28,73 @@ object EncodeDFG {
     Json.obj(
       ("id", node.id.asJson),
       ("parallelism", node.parallelism.asJson),
-      ("kind", node.kind.asJson(node.id)),
+      ("kind", node.kind.asJson(node)),
   )
 
-  implicit def encodeNodeKind(id: String): Encoder[NodeKind] = {
+  implicit def encodeNodeKind(node: Node): Encoder[NodeKind] = {
     case source: Source =>
+      val outputId = source.successors(0) match {
+        case Local(succ) => StructId.from(node.id, succ.id)
+        case Remote(succ, _) => StructId.from(node.id, succ.id)
+      }
       Json.obj(
         ("Source",
-         Json.obj(
-           ("source_type", source.sourceType.asJson(encodeType(source.successors(0) match {
-             case Local(node)     => StructId.from(id, node.id)
-             case Remote(node, _) => StructId.from(id, node.id)
-           }))),
-           ("format", source.format.asJson),
-           ("channel_strategy", source.channelStrategy.asJson),
-           ("successors", source.successors.asJson),
-           ("kind", source.kind.asJson),
-         )))
+          Json.obj(
+            ("source_type", source.sourceType.asJson(encodeType(outputId))),
+            ("format", source.format.asJson),
+            ("channel_strategy", source.channelStrategy.asJson),
+            ("successors", source.successors.asJson),
+            ("kind", source.kind.asJson),
+          )))
     case task: Task =>
+      val (a, b) = getInputId(task.predecessor, node.id)
+      val inputId = StructId.from(a, b)
+      val outputId = task.kind match {
+        case TaskKind.Filter => inputId
+        case _ => task.successors(0) match {
+            case Local(succ) => StructId.from(node.id, succ.id)
+            case Remote(succ, _) => StructId.from(node.id, succ.id)
+          }
+      }
       Json.obj(
         ("Task",
-         Json.obj(
-           ("weld_code", pretty(task.weldFunc).asJson),
-           ("input_type", task.inputType.asJson(encodeType(StructId.from(task.predecessor.id, id)))),
-           ("output_type", task.outputType.asJson(encodeType(task.successors(0) match {
-             case Local(node)     => StructId.from(id, node.id)
-             case Remote(node, _) => StructId.from(id, node.id)
-           }))),
-           ("channel_strategy", task.channelStrategy.asJson),
-           ("predecessor", task.predecessor.id.asJson),
-           ("successors", task.successors.asJson),
-           ("kind", task.kind.asJson),
-         )))
+          Json.obj(
+            ("weld_code", pretty(task.weldFunc).asJson),
+            ("input_type", task.inputType.asJson(encodeType(inputId))),
+            ("output_type", task.outputType.asJson(encodeType(outputId))),
+            ("channel_strategy", task.channelStrategy.asJson),
+            ("predecessor", task.predecessor.id.asJson),
+            ("successors", task.successors.asJson),
+            ("kind", task.kind.asJson),
+          )))
     case sink: Sink =>
+      val inputId = StructId.from(sink.predecessor.id, node.id)
       Json.obj(
         ("Sink",
-         Json.obj(
-           ("sink_type", sink.sinkType.asJson(encodeType(StructId.from(sink.predecessor.id, id)))),
-           ("format", sink.format.asJson),
-           ("predecessor", sink.predecessor.id.asJson),
-           ("kind", sink.kind.asJson),
-         )))
+          Json.obj(
+            ("sink_type", sink.sinkType.asJson(encodeType(inputId))),
+            ("format", sink.format.asJson),
+            ("predecessor", sink.predecessor.id.asJson),
+            ("kind", sink.kind.asJson),
+          )))
     case window: Window =>
+      val (a, b) = getInputId(window.predecessor, node.id)
+      val inputId = StructId.from(a, b)
+      val outputId = window.successors(0) match {
+        case Local(succ) => StructId.from(node.id, succ.id)
+        case Remote(succ, _) => StructId.from(node.id, succ.id)
+      }
       Json.obj(
         ("Window",
-         Json.obj(
-           ("channel_strategy", window.channelStrategy.asJson),
-           ("predecessor", window.predecessor.id.asJson),
-           ("successors", window.successors.asJson),
-           ("assigner", window.assigner.asJson),
-           ("window_function", window.function.asJson),
-           ("time_kind", window.time.asJson),
-           ("window_kind", window.kind.asJson),
-         )))
+          Json.obj(
+            ("channel_strategy", window.channelStrategy.asJson),
+            ("predecessor", window.predecessor.id.asJson),
+            ("successors", window.successors.asJson),
+            ("assigner", window.assigner.asJson),
+            ("window_function", window.function.asJson(encodeWindowFunction(inputId, outputId))),
+            ("time_kind", window.time.asJson),
+            ("window_kind", window.kind.asJson),
+          )))
   }
 
   implicit val encodeSourceKind: Encoder[SourceKind] = {
@@ -151,15 +165,16 @@ object EncodeDFG {
     case Broadcast => "Broadcast".asJson
   }
 
-  implicit val encodeWindowFunction: Encoder[WindowFunction] = function =>
-    Json.obj(
-      ("input_type", function.inputType.asJson(encodeType())),
-      ("output_type", function.outputType.asJson(encodeType())),
-      ("builder_type", function.builderType.asJson(encodeType())),
-      ("builder", pretty(function.init).asJson),
-      ("udf", pretty(function.lift).asJson),
-      ("materialiser", pretty(function.lower).asJson),
-  )
+  implicit def encodeWindowFunction(inputId: String, outputId: String): Encoder[WindowFunction] =
+    function =>
+      Json.obj(
+        ("input_type", function.inputType.asJson(encodeType(inputId))),
+        ("output_type", function.outputType.asJson(encodeType(outputId))),
+        ("builder_type", function.builderType.asJson(encodeType())),
+        ("builder", pretty(function.init).asJson),
+        ("udf", pretty(function.lift).asJson),
+        ("materialiser", pretty(function.lower).asJson),
+    )
 
   implicit val encodeWindowAssigner: Encoder[WindowAssigner] = {
     case tumbling: Tumbling =>
@@ -179,13 +194,12 @@ object EncodeDFG {
     case All   => "All".asJson
   }
 
-  //implicit val encodeType: Encoder[Type] = {
-  //  case _: Appender    => "Appender".asJson
-  //  case _: Merger      => "Merger".asJson
-  //  case _: VecMerger   => "VecMerger".asJson
-  //  case _: DictMerger  => "DictMerger".asJson
-  //  case _: GroupMerger => "GroupMerger".asJson
-  //  case _              => ???
-  //}
+  // Walks backwards and finds the first output coming from a non-filter
+  private def getInputId(node: Node, succ_id: String): (String, String) = {
+    node.kind match {
+      case Task(_, _, _, pred, _, _, Filter, _) => getInputId(pred, node.id)
+      case _: Source | _: Task | _: Window | _: Sink => (node.id, succ_id)
+    }
+  }
 
 }

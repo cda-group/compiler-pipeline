@@ -27,9 +27,9 @@ object ToDFG {
         case lambda: Lambda =>
           (lambda.params.map {
             case Parameter(symbol, StreamAppender(elemTy, _)) =>
-              symbol.name -> Node(id = SinkId.newId, kind = Sink(sinkType = elemTy))
+              symbol.name -> Node(id = SinkId.newGlobalId, kind = Sink(sinkType = elemTy))
             case Parameter(symbol, Stream(elemTy)) =>
-              symbol.name -> Node(id = SourceId.newId, kind = Source(sourceType = elemTy))
+              symbol.name -> Node(id = SourceId.newGlobalId, kind = Source(sourceType = elemTy))
             case _ => ???
           }.toMap, lambda.body)
         case _ => ???
@@ -70,7 +70,7 @@ object ToDFG {
         val (inputType, precedessor, _) = transformSource(iter, nodes)
         val nodeKind = transformSink(sink, func, inputType, precedessor)
         // Add node as successor to predecessor
-        val newNode = Node(id = TaskId.newId, kind = nodeKind)
+        val newNode = Node(id = TaskId.newGlobalId, kind = nodeKind)
         precedessor.kind match {
           case source: Source => source.successors = source.successors :+ Local(node = newNode)
           case task: Task     => task.successors = task.successors :+ Local(node = newNode)

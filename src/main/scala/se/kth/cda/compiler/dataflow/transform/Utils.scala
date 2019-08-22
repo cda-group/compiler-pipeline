@@ -58,11 +58,12 @@ object Utils {
       }(self)
     }
 
-    // Transforms an Arc stream into its element type
+    // Transforms an Arc stream or streamappender into its element type
     def toElemType: Type = {
       fix[Type, Type] { f =>
         {
           case ty: Stream => ty.elemTy
+          case ty: StreamAppender => ty.elemTy
           case ty: Struct => Struct(ty.elemTys.map(f))
           case ty @ _     => ty
         }
