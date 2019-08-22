@@ -36,7 +36,7 @@ object Compiler {
     //println(dfg.pretty)
 
     val enriched_dfg = dfg.enrich(metadata)
-    val optimized_dfg = enriched_dfg.optimize
+    val optimized_dfg = enriched_dfg.optimize(fusion = false)
     //println(optimized_dfg.pretty)
     //println(enriched_dfg.pretty)
 

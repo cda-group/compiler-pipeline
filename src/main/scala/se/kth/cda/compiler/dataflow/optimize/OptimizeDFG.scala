@@ -8,20 +8,22 @@ object OptimizeDFG {
   import se.kth.cda.compiler.dataflow.optimize.Fusion._
   import se.kth.cda.compiler.dataflow.optimize.Specialization._
   implicit class OptimizeDFG(val dfg: DFG) extends AnyVal {
-    def optimize: DFG = {
+    def optimize(fusion: Boolean = true): DFG = {
       //println(encodeDFG(dfg))
-      dfg.nodes
-        .filter(_.kind match {
-          case _: Sink => true
-          case _       => false
-        })
-        .foreach(_.fuseHorizontally)
+      if (fusion) {
+        dfg.nodes
+          .filter(_.kind match {
+            case _: Sink => true
+            case _ => false
+          })
+          .foreach(_.fuseHorizontally)
 
-      dfg.nodes = dfg.nodes
-        .filter(_.kind match {
-          case task: Task => !task.removed
-          case _          => true
-        })
+        dfg.nodes = dfg.nodes
+          .filter(_.kind match {
+            case task: Task => !task.removed
+            case _ => true
+          })
+      }
 
       //println(encodeDFG(dfg))
 
