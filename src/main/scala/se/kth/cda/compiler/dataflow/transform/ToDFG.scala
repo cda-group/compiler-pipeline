@@ -91,7 +91,7 @@ object ToDFG {
           case Ident(Symbol(sourceName, _, _)) => (nodes(sourceName), 0)
           // for(source.$0, sink, ...)
           case Projection(Expr(Ident(Symbol(sourceName, _, _)), _, _, _), i) => (nodes(sourceName), i)
-          case _ => ???
+          case _                                                             => ???
         }
         (inputType, from, index)
       //case Iter(KeyByIter, source, _, _, _, _, _, keyFunc) =>

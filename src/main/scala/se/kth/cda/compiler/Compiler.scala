@@ -17,7 +17,7 @@ object Compiler {
   def compile(input: String): String = {
 
     val metadata = metadataDecoder(io.circe.parser.parse(input).getOrElse(Json.Null).hcursor) match {
-      case Left(value) => throw value
+      case Left(value)  => throw value
       case Right(value) => value
     }
     //print(metadata)

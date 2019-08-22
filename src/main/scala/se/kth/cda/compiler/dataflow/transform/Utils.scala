@@ -61,11 +61,11 @@ object Utils {
     // Transforms an Arc stream into its element type
     def toElemType: Type = {
       fix[Type, Type] { f =>
-      {
-        case ty: Stream => ty.elemTy
-        case ty: Struct => Struct(ty.elemTys.map(f))
-        case ty @ _     => ty
-      }
+        {
+          case ty: Stream => ty.elemTy
+          case ty: Struct => Struct(ty.elemTys.map(f))
+          case ty @ _     => ty
+        }
       }(self)
     }
 

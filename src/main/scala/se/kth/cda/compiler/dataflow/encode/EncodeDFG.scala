@@ -175,8 +175,8 @@ object EncodeDFG {
   }
 
   implicit val encodeWindowKind: Encoder[WindowKind] = {
-    case Keyed        => "Keyed".asJson
-    case All          => "All".asJson
+    case Keyed => "Keyed".asJson
+    case All   => "All".asJson
   }
 
   //implicit val encodeType: Encoder[Type] = {

@@ -26,8 +26,8 @@ object DecodeMetadata {
   implicit val sourceDecoder: Decoder[NodeKind.Source] =
     (cursor: HCursor) =>
       for {
-        format <- cursor.get[String]("format").map{
-          case "CSV" => Format.CSV
+        format <- cursor.get[String]("format").map {
+          case "CSV"  => Format.CSV
           case "UTF8" => Format.UTF8
           case "JSON" => Format.JSON
         }
@@ -50,8 +50,8 @@ object DecodeMetadata {
   implicit val sinkDecoder: Decoder[NodeKind.Sink] =
     (cursor: HCursor) =>
       for {
-        format <- cursor.get[String]("format").map{
-          case "CSV" => Format.CSV
+        format <- cursor.get[String]("format").map {
+          case "CSV"  => Format.CSV
           case "UTF8" => Format.UTF8
           case "JSON" => Format.JSON
         }
@@ -70,11 +70,13 @@ object DecodeMetadata {
 
   implicit val formatDecoder: Decoder[Format] = deriveDecoder
 
-  implicit val windowDecoder: Decoder[Window] = (cursor: HCursor) => for {
-    _ <- cursor.get[String]("name")
-  } yield Window(null, null, null, null, null, null, null)
+  implicit val windowDecoder: Decoder[Window] = (cursor: HCursor) =>
+    for {
+      _ <- cursor.get[String]("name")
+    } yield Window(null, null, null, null, null, null, null)
 
-  implicit val taskDecoder: Decoder[Task] = (cursor: HCursor) => for {
-    _ <- cursor.get[String]("name")
-  } yield Task(null, null, null, null)
+  implicit val taskDecoder: Decoder[Task] = (cursor: HCursor) =>
+    for {
+      _ <- cursor.get[String]("name")
+    } yield Task(null, null, null, null)
 }
