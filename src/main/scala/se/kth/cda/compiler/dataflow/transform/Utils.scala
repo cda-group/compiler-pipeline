@@ -3,8 +3,8 @@ package se.kth.cda.compiler.dataflow.transform
 import se.kth.cda.arc.syntaxtree.AST.ExprKind._
 import se.kth.cda.arc.syntaxtree.AST._
 import se.kth.cda.arc.syntaxtree.Type.Builder._
-import se.kth.cda.arc.syntaxtree._
 import se.kth.cda.arc.syntaxtree.Type._
+import se.kth.cda.arc.syntaxtree._
 import se.kth.cda.compiler.Utils._
 
 object Utils {

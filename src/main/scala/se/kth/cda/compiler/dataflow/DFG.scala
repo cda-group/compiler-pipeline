@@ -4,8 +4,6 @@ import se.kth.cda.arc.syntaxtree.AST.Expr
 import se.kth.cda.arc.syntaxtree.Type
 import se.kth.cda.compiler.dataflow.ChannelStrategy._
 import se.kth.cda.compiler.dataflow.IdGenerator.{DFGId, NodeId}
-import se.kth.cda.compiler.dataflow.SinkKind.Debug
-import se.kth.cda.compiler.dataflow.SourceKind.Socket
 import se.kth.cda.compiler.dataflow.TimeKind.Ingestion
 import se.kth.cda.compiler.dataflow.WindowKind.All
 

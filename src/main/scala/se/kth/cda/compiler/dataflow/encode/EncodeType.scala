@@ -1,10 +1,10 @@
 package se.kth.cda.compiler.dataflow.encode
 
-import io.circe.{Encoder, Json}
 import io.circe.syntax._
-import se.kth.cda.arc.syntaxtree.{MergeOp, Type}
+import io.circe.{Encoder, Json}
 import se.kth.cda.arc.syntaxtree.Type.Builder._
 import se.kth.cda.arc.syntaxtree.Type._
+import se.kth.cda.arc.syntaxtree.{MergeOp, Type}
 import se.kth.cda.compiler.dataflow.IdGenerator.StructId
 
 object EncodeType {

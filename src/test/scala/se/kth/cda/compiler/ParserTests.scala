@@ -1,7 +1,6 @@
 package se.kth.cda.compiler
 
 import org.scalatest.{FunSuite, Matchers}
-import se.kth.cda.compiler.dataflow.IdGenerator
 
 import scala.language.implicitConversions
 

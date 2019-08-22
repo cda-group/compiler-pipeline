@@ -1,6 +1,6 @@
 package se.kth.cda.compiler.dataflow.pretty
 
-import se.kth.cda.compiler.dataflow.{ChannelKind, DFG, Node, NodeKind}
+import se.kth.cda.compiler.dataflow.{DFG, Node, NodeKind}
 
 object PrettyPrint {
 

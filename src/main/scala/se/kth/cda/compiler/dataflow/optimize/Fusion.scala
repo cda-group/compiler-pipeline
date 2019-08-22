@@ -1,16 +1,15 @@
 package se.kth.cda.compiler.dataflow.optimize
 
-import se.kth.cda.arc.syntaxtree.AST.{Expr, ExprKind}
-import se.kth.cda.compiler.dataflow.{ChannelKind, Node, NodeKind}
-import se.kth.cda.compiler.dataflow.NodeKind.{Sink, Source, Task, Window}
-import se.kth.cda.compiler.dataflow.TaskKind.FlatMap
+import se.kth.cda.arc.syntaxtree.AST.Expr
+import se.kth.cda.arc.syntaxtree.AST.ExprKind._
+import se.kth.cda.arc.syntaxtree.ASTUtils._
+import se.kth.cda.arc.syntaxtree.Type
+import se.kth.cda.arc.syntaxtree.Type.Function
+import se.kth.cda.compiler.Utils._
 import se.kth.cda.compiler.dataflow.Analyzer._
 import se.kth.cda.compiler.dataflow.ChannelKind.{Local, Remote}
-import se.kth.cda.arc.syntaxtree.AST.ExprKind._
-import se.kth.cda.arc.syntaxtree.Type.{Function, I64}
-import se.kth.cda.compiler.Utils._
-import se.kth.cda.arc.syntaxtree.ASTUtils._
-import se.kth.cda.arc.syntaxtree.{CompoundType, ConcreteType, Type}
+import se.kth.cda.compiler.dataflow.Node
+import se.kth.cda.compiler.dataflow.NodeKind.{Sink, Source, Task, Window}
 
 object Fusion {
 

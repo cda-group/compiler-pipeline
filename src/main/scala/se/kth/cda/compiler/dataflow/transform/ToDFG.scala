@@ -7,9 +7,9 @@ import se.kth.cda.arc.syntaxtree.Type
 import se.kth.cda.arc.syntaxtree.Type.Builder._
 import se.kth.cda.arc.syntaxtree.Type._
 import se.kth.cda.compiler.dataflow.ChannelKind.Local
-import se.kth.cda.compiler.dataflow._
-import se.kth.cda.compiler.dataflow.NodeKind._
 import se.kth.cda.compiler.dataflow.IdGenerator._
+import se.kth.cda.compiler.dataflow.NodeKind._
+import se.kth.cda.compiler.dataflow._
 
 object ToDFG {
 
